@@ -13,7 +13,6 @@ from multiprocessing import Pool
 from functools import partial
 from tqdm import tqdm
 import numpy as np
-import numpy.core.multiarray as multiarray
 
 def auto_unzip_fun(x, f):
     return f(*x)
@@ -34,13 +33,6 @@ def make_video(output_mp4_path, img_path_list, save_frames_dir=None, fps=24):
     output_path is the final mp4 name
     img_dir is where the images to make into video are saved.
     """
-    print(cv2.__file__)
-    print('save_frames_dir=',save_frames_dir)
-    print ('output_mp4_path=',output_mp4_path)
-    print ('img_path_list=',len(img_path_list))
-    print (img_path_list[0])
-
-
     first_img = cv2.imread(img_path_list[0])
     h, w = first_img.shape[:2]
 
