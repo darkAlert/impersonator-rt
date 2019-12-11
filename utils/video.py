@@ -5,13 +5,15 @@
 
 import os
 import glob
+import sys
+# sys.path.insert(0, "/usr/local/lib/python3.6/dist-packages")
 import cv2
 import shutil
 from multiprocessing import Pool
 from functools import partial
 from tqdm import tqdm
 import numpy as np
-
+import numpy.core.multiarray as multiarray
 
 def auto_unzip_fun(x, f):
     return f(*x)
@@ -22,11 +24,22 @@ def render_and_save(pose_visualizer, bg_img, smpl_pose, smpl_cam, save_path):
     cv2.imwrite(save_path, render_img)
 
 
+def make_video_by_ffmpeg(output_mp4_path, img_path, fps=24):
+    os.system("ffmpeg -f image2 -framerate %s -i %s/pred_%%8d.jpg %s" % (fps,img_path,output_mp4_path))
+    print ('Video has been saved to:',output_mp4_path)
+
+
 def make_video(output_mp4_path, img_path_list, save_frames_dir=None, fps=24):
     """
     output_path is the final mp4 name
     img_dir is where the images to make into video are saved.
     """
+    print(cv2.__file__)
+    print('save_frames_dir=',save_frames_dir)
+    print ('output_mp4_path=',output_mp4_path)
+    print ('img_path_list=',len(img_path_list))
+    print (img_path_list[0])
+
 
     first_img = cv2.imread(img_path_list[0])
     h, w = first_img.shape[:2]

@@ -7,7 +7,7 @@ from models.imitator import Imitator
 from options.test_options import TestOptions
 from utils.util import mkdir
 import pickle
-from utils.video import make_video
+from utils.video import make_video, make_video_by_ffmpeg
 
 
 from run_imitator import adaptive_personalize
@@ -73,8 +73,9 @@ def generate_actor_result(test_opt, src_img_path):
             mkdir(save_dir)
 
             output_mp4_path = os.path.join(save_dir, 'mixamo_%.4d_%s.mp4' % (i, src_img_name))
-            img_path_list = sorted(glob.glob('%s/*.jpg' % pred_output_dir))
-            make_video(output_mp4_path, img_path_list, save_frames_dir=None, fps=30)
+            # img_path_list = sorted(glob.glob('%s/*.jpg' % pred_output_dir))
+            # make_video(output_mp4_path, img_path_list, save_frames_dir=None, fps=30)
+            make_video_by_ffmpeg(output_mp4_path, pred_output_dir, fps=30)
 
 
 def clean(output_dir):

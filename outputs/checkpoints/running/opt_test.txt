@@ -1,0 +1,53 @@
+------------ Options -------------
+T_pose: False
+batch_size: 4
+bg_ks: 13
+bg_model: ./outputs/checkpoints/deepfillv2/net_epoch_50_id_G.pth
+bg_replace: False
+body_seg: False
+cam_strategy: smooth
+checkpoints_dir: ./outputs/checkpoints/
+cond_nc: 3
+data_dir: /p300/datasets/iPER
+dataset_mode: iPER
+debug: False
+do_saturate_mask: False
+face_model: assets/pretrains/sphere20a_20171020.pth
+front_warp: False
+ft_ks: 3
+gen_name: impersonator
+gpu_ids: 0
+has_detector: False
+hmr_model: assets/pretrains/hmr_tf2pt.pth
+image_size: 256
+images_folder: images_HD
+ip: 
+is_train: False
+load_epoch: 0
+load_path: ./outputs/checkpoints/lwb_imper_fashion_place/net_epoch_30_id_G.pth
+map_name: uv_seg
+model: impersonator
+n_threads_test: 2
+name: running
+norm_type: instance
+only_vis: False
+output_dir: ./outputs/results/
+part_info: assets/pretrains/smpl_part_info.json
+port: 31100
+post_tune: False
+pri_path: ./assets/samples/A_priors/imgs
+repeat_num: 6
+save_res: False
+serial_batches: False
+smpl_model: assets/pretrains/smpl_model.pkl
+smpls_folder: smpls
+src_path: 
+swap_part: body
+test_ids_file: val.txt
+tex_size: 3
+tgt_path: 
+time_step: 10
+train_ids_file: train.txt
+uv_mapping: assets/pretrains/mapper.txt
+view_params: R=0,90,0/t=0,0,0
+-------------- End ----------------
