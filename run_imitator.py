@@ -240,5 +240,13 @@ if __name__ == "__main__":
     imitator.inference(tgt_paths, tgt_smpls=None, cam_strategy='smooth',
                        output_dir=pred_output_dir, visualizer=visualizer, verbose=True)
 
+    #Make and save a video:
+    # fps = 30
+    # name = test_opt.src_path.split('/')[-1].split('.')[0]
+    # output_mp4_path = os.path.join(test_opt.output_dir, 'imitator_%s.mp4' % (name))
+    # os.system("ffmpeg -f image2 -framerate %s -i %s/pred_%%4d.jpg %s" % (fps,pred_output_dir,output_mp4_path))
+    # os.system("ffmpeg -f image2 -framerate %s -i %s/pred_hd_00_11-%%5d.jpeg %s" % (fps,pred_output_dir,output_mp4_path))
+    # print ('Video has been saved to:',output_mp4_path)
+
 
 
