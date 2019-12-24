@@ -6,15 +6,15 @@ gpu_ids=0
 
 # dataset configs
 dataset_model=iPER  # use iPER dataset
-data_dir=/p300/iccv/iPER_examples  # need to be replaced!!!!!
-images_folder=images
+data_dir=~/Anton/Data/iPER  # need to be replaced!!!!!
+images_folder=iPER_256_images
 smpls_folder=smpls
 train_ids_file=train.txt
 test_ids_file=val.txt
 
 # saving configs
-checkpoints_dir=/p300/iccv/ckpts_models   # directory to save models, need to be replaced!!!!!
-name=exp_iPER   # the directory is ${checkpoints_dir}/name, which is used to save the checkpoints.
+checkpoints_dir=~/builds/impersonator/outputs   # directory to save models, need to be replaced!!!!!
+name=my_iPER   # the directory is ${checkpoints_dir}/name, which is used to save the checkpoints.
 
 # model configs
 model=impersonator_trainer
