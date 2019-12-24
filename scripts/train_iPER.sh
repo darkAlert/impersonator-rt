@@ -34,7 +34,7 @@ lambda_mask_smooth=1.0
 nepochs_no_decay=5  # fixing learning rate when epoch ranges in [0, 5]
 nepochs_decay=25    # decreasing the learning rate when epoch ranges in [6, 25+5]
 
-python train.py --gpu_ids ${gpu_ids}        \
+python3 train.py --gpu_ids ${gpu_ids}        \
     --data_dir  ${data_dir}                 \
     --images_folder    ${images_folder}     \
     --smpls_folder     ${smpls_folder}      \
