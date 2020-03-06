@@ -13,7 +13,7 @@ dataset_mode: iPER
 debug: False
 do_saturate_mask: False
 face_model: assets/pretrains/sphere20a_20171020.pth
-front_warp: True
+front_warp: False
 ft_ks: 3
 gen_name: impersonator
 gpu_ids: 0
@@ -24,14 +24,14 @@ images_folder: images_HD
 ip: 
 is_train: False
 load_epoch: 0
-load_path: ./outputs/checkpoints/lwb_imper_fashion_place/net_epoch_30_id_G.pth
+load_path: ./outputs/checkpoints/my_iPER/net_epoch_26_id_G.pth
 map_name: uv_seg
 model: viewer
 n_threads_test: 2
 name: running
 norm_type: instance
 only_vis: False
-output_dir: ./outputs/results/LWGtest/
+output_dir: ./outputs/results/LWGtest_by_my_model/
 part_info: assets/pretrains/smpl_part_info.json
 port: 31100
 post_tune: True
