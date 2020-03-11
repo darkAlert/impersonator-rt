@@ -67,7 +67,7 @@ class HoloBaseDataset(DatasetBase):
 				for cam_path in cams_path:
 					images_path = []
 					for file in os.listdir(cam_path):
-						if file.endswith('jpeg') or file.endswith('jpg') or file.endswith('png') or file.endswith('JPEG') or file.endswith('JPG') or file.endswith('PNG'):
+						if any(file.endswith(extension) for extension in self._IMG_EXTENSIONS):
 							images_path.append(os.path.join(cam_path,file))
 					images_path.sort()
 					cams_image_path.append(images_path)
