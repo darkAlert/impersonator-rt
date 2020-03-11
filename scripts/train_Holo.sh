@@ -5,16 +5,16 @@
 gpu_ids=0
 
 # dataset configs
-dataset_model=iPER  # use iPER dataset
-data_dir=~/Anton/Data/iPER  # need to be replaced!!!!!
-images_folder=iPER_256_images
+dataset_model=Holo  # use iPER dataset
+data_dir=/home/darkalert/KazendiJob/Data/HoloVideo/Data  # need to be replaced!!!!!
+images_folder=avatars
 smpls_folder=smpls
 train_ids_file=train.txt
 test_ids_file=val.txt
 
 # saving configs
 checkpoints_dir=~/builds/impersonator/outputs   # directory to save models, need to be replaced!!!!!
-name=my_iPER   # the directory is ${checkpoints_dir}/name, which is used to save the checkpoints.
+name=Holo1   # the directory is ${checkpoints_dir}/name, which is used to save the checkpoints.
 
 # model configs
 model=impersonator_trainer

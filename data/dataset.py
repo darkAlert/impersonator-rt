@@ -34,6 +34,10 @@ class DatasetFactory(object):
             from data.imper_fashion_place_dataset import ImPerFashionPlaceDataset
             dataset = ImPerFashionPlaceDataset(opt, is_for_train)
 
+        elif dataset_name == 'Holo':
+            from data.holo_dataset import HoloDataset
+            dataset = HoloDataset(opt, is_for_train)
+
         else:
             raise ValueError("Dataset [%s] not recognized." % dataset_name)
 
