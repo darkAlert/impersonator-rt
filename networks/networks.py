@@ -34,6 +34,10 @@ class NetworksFactory(object):
             from .discriminator import GlobalLocalDiscriminator
             network = GlobalLocalDiscriminator(*args, **kwargs)
 
+        elif network_name == 'holoportator':
+            from .generator import HoloportGenerator
+            network = HoloportGenerator(*args, **kwargs)
+
         else:
             raise ValueError("Network %s not recognized." % network_name)
 

@@ -320,6 +320,137 @@ class ImpersonatorGenerator(NetworkBase):
         return x_trans
 
 
+class HoloportGenerator(NetworkBase):
+    """Generator. Encoder-Decoder Architecture."""
+    def __init__(self, src_dim, tsf_dim, conv_dim=64, repeat_num=6):
+        super(HoloportGenerator, self).__init__()
+        self._name = 'holoport_generator'
+
+        self.n_down = 3
+        self.repeat_num = repeat_num
+
+        # source generator
+        self.src_model = ResUnetGenerator(conv_dim=conv_dim, c_dim=src_dim, repeat_num=repeat_num, k_size=3, n_down=self.n_down)
+
+        # transfer generator
+        self.tsf_model = ResUnetGenerator(conv_dim=conv_dim, c_dim=tsf_dim, repeat_num=repeat_num, k_size=3, n_down=self.n_down)
+
+    def forward(self, src_inputs, tsf_inputs, T):
+
+        src_img, src_mask, tsf_img, tsf_mask = self.infer_front(src_inputs, tsf_inputs, T)
+
+        return src_img, src_mask, tsf_img, tsf_mask
+
+    def encode_src(self, src_inputs):
+        return self.src_model.inference(src_inputs)
+
+    def infer_front(self, src_inputs, tsf_inputs, T):
+        # encoder
+        src_x = self.src_model.encoders[0](src_inputs)
+        tsf_x = self.tsf_model.encoders[0](tsf_inputs)
+
+        src_encoder_outs = [src_x]
+        tsf_encoder_outs = [tsf_x]
+        for i in range(1, self.n_down + 1):
+            src_x = self.src_model.encoders[i](src_x)
+            warp = self.transform(src_x, T)
+            tsf_x = self.tsf_model.encoders[i](tsf_x) + warp
+
+            src_encoder_outs.append(src_x)
+            tsf_encoder_outs.append(tsf_x)
+
+        # resnets
+        T_scale = self.resize_trans(src_x, T)
+        for i in range(self.repeat_num):
+            src_x = self.src_model.resnets[i](src_x)
+            warp = self.stn(src_x, T_scale)
+            tsf_x = self.tsf_model.resnets[i](tsf_x) + warp
+
+        # decoders
+        src_img, src_mask = self.src_model.regress(self.src_model.decode(src_x, src_encoder_outs))
+        tsf_img, tsf_mask = self.tsf_model.regress(self.tsf_model.decode(tsf_x, tsf_encoder_outs))
+
+        # print(front_rgb.shape, front_mask.shape)
+        return src_img, src_mask, tsf_img, tsf_mask
+
+    def swap(self, tsf_inputs, src_encoder_outs12, src_encoder_outs21, src_resnet_outs12, src_resnet_outs21, T12, T21):
+        # encoder
+        src_x12 = src_encoder_outs12[0]
+        src_x21 = src_encoder_outs21[0]
+        tsf_x = self.tsf_model.encoders[0](tsf_inputs)
+
+        tsf_encoder_outs = [tsf_x]
+        for i in range(1, self.n_down + 1):
+            src_x12 = src_encoder_outs12[i]
+            src_x21 = src_encoder_outs21[i]
+            warp12 = self.transform(src_x12, T12)
+            warp21 = self.transform(src_x21, T21)
+
+            tsf_x = self.tsf_model.encoders[i](tsf_x) + warp12 + warp21
+            tsf_encoder_outs.append(tsf_x)
+
+        # resnets
+        T_scale12 = self.resize_trans(src_x12, T12)
+        T_scale21 = self.resize_trans(src_x21, T21)
+        for i in range(self.repeat_num):
+            src_x12 = src_resnet_outs12[i]
+            src_x21 = src_resnet_outs21[i]
+            warp12 = self.stn(src_x12, T_scale12)
+            warp21 = self.stn(src_x21, T_scale21)
+            tsf_x = self.tsf_model.resnets[i](tsf_x) + warp12 + warp21
+
+        # decoders
+        tsf_img, tsf_mask = self.tsf_model.regress(self.tsf_model.decode(tsf_x, tsf_encoder_outs))
+
+        # print(front_rgb.shape, front_mask.shape)
+        return tsf_img, tsf_mask
+
+    def inference(self, src_encoder_outs, src_resnet_outs, tsf_inputs, T):
+        # encoder
+        src_x = src_encoder_outs[0]
+        tsf_x = self.tsf_model.encoders[0](tsf_inputs)
+
+        tsf_encoder_outs = [tsf_x]
+        for i in range(1, self.n_down + 1):
+            src_x = src_encoder_outs[i]
+            warp = self.transform(src_x, T)
+
+            tsf_x = self.tsf_model.encoders[i](tsf_x) + warp
+            tsf_encoder_outs.append(tsf_x)
+
+        # resnets
+        T_scale = self.resize_trans(src_x, T)
+        for i in range(self.repeat_num):
+            src_x = src_resnet_outs[i]
+            warp = self.stn(src_x, T_scale)
+            tsf_x = self.tsf_model.resnets[i](tsf_x) + warp
+
+        # decoders
+        tsf_img, tsf_mask = self.tsf_model.regress(self.tsf_model.decode(tsf_x, tsf_encoder_outs))
+
+        # print(front_rgb.shape, front_mask.shape)
+        return tsf_img, tsf_mask
+
+    def resize_trans(self, x, T):
+        _, _, h, w = x.shape
+
+        T_scale = T.permute(0, 3, 1, 2)  # (bs, 2, h, w)
+        T_scale = F.interpolate(T_scale, size=(h, w), mode='bilinear', align_corners=True)
+        T_scale = T_scale.permute(0, 2, 3, 1)  # (bs, h, w, 2)
+
+        return T_scale
+
+    def stn(self, x, T):
+        x_trans = F.grid_sample(x, T)
+
+        return x_trans
+
+    def transform(self, x, T):
+        T_scale = self.resize_trans(x, T)
+        x_trans = self.stn(x, T_scale)
+        return x_trans
+
+
 if __name__ == '__main__':
     imitator = ImpersonatorGenerator(bg_dim=4, src_dim=6, tsf_dim=6, conv_dim=64, repeat_num=6)
 

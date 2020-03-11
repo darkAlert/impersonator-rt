@@ -17,8 +17,8 @@ checkpoints_dir=~/builds/impersonator/outputs   # directory to save models, need
 name=Holo1   # the directory is ${checkpoints_dir}/name, which is used to save the checkpoints.
 
 # model configs
-model=impersonator_trainer
-gen_name=impersonator
+model=holoportator_trainer
+gen_name=holoportator
 image_size=256
 
 # training configs

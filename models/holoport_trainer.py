@@ -9,11 +9,11 @@ from utils.nmr import SMPLRenderer
 import ipdb
 
 
-class BodyRecoveryFlow(torch.nn.Module):
+class BodyRecoveryFlowH(torch.nn.Module):
 
     def __init__(self, opt):
-        super(BodyRecoveryFlow, self).__init__()
-        self._name = 'BodyRecoveryFlow'
+        super(BodyRecoveryFlowH, self).__init__()
+        self._name = 'BodyRecoveryFlowH'
         self._opt = opt
 
         # create networks
@@ -63,24 +63,13 @@ class BodyRecoveryFlow(torch.nn.Module):
         # tsf input
         input_G_tsf = torch.cat([syn_img, ref_cond], dim=1)
 
-        # bg input
-        src_bg_mask = util.morph(src_cond[:, -1:, :, :], ks=15, mode='erode')
-        input_G_src_bg = torch.cat([src_img * src_bg_mask, src_bg_mask], dim=1)
-
-        if self._opt.bg_both:
-            ref_bg_mask = util.morph(ref_cond[:, -1:, :, :], ks=15, mode='erode')
-            input_G_tsf_bg = torch.cat([ref_img * ref_bg_mask, ref_bg_mask], dim=1)
-        else:
-            input_G_tsf_bg = None
-
         # masks
         tsf_crop_mask = util.morph(ref_cond[:, -1:, :, :], ks=3, mode='erode')
 
         head_bbox = self.cal_head_bbox(ref_info['j2d'])
         body_bbox = self.cal_body_bbox(ref_info['j2d'])
 
-        return input_G_src_bg, input_G_tsf_bg, input_G_src, input_G_tsf, \
-               T, src_crop_mask, tsf_crop_mask, head_bbox, body_bbox
+        return input_G_src, input_G_tsf, T, src_crop_mask, tsf_crop_mask, head_bbox, body_bbox
 
     def cal_head_bbox(self, kps):
         """
@@ -165,10 +154,10 @@ class BodyRecoveryFlow(torch.nn.Module):
         return bboxs
 
 
-class Holoport(BaseModel):
+class Holoportator(BaseModel):
     def __init__(self, opt):
-        super(Holoport, self).__init__(opt)
-        self._name = 'Holoport'
+        super(Holoportator, self).__init__(opt)
+        self._name = 'Holoportator'
 
         # create networks
         self._init_create_networks()
@@ -192,7 +181,7 @@ class Holoport(BaseModel):
         multi_gpus = len(self._gpu_ids) > 1
 
         # body recovery Flow
-        self._bdr = BodyRecoveryFlow(opt=self._opt)
+        self._bdr = BodyRecoveryFlowH(opt=self._opt)
         if multi_gpus:
             self._bdr = torch.nn.DataParallel(self._bdr)
 
@@ -214,7 +203,7 @@ class Holoport(BaseModel):
         self._D.cuda()
 
     def _create_generator(self):
-        return NetworksFactory.get_by_name(self._opt.gen_name, bg_dim=4, src_dim=3+self._G_cond_nc,
+        return NetworksFactory.get_by_name(self._opt.gen_name, src_dim=3+self._G_cond_nc,
                                            tsf_dim=3+self._G_cond_nc, repeat_num=self._opt.repeat_num)
 
     def _create_discriminator(self):
@@ -236,7 +225,6 @@ class Holoport(BaseModel):
         self._real_tsf = None
         self._bg_mask = None
         self._input_src = None
-        self._input_G_bg = None
         self._input_G_src = None
         self._input_G_tsf = None
         self._T = None
@@ -296,17 +284,13 @@ class Holoport(BaseModel):
             tsf_img = images[:, 1, ...].cuda()
             tsf_smpl = smpls[:, 1, ...].cuda()
 
-            input_G_src_bg, input_G_tsf_bg, input_G_src, input_G_tsf, T, src_crop_mask, \
-                tsf_crop_mask, head_bbox, body_bbox = self._bdr(src_img, tsf_img, src_smpl, tsf_smpl)
+            input_G_src, input_G_tsf, T, src_crop_mask, \
+            tsf_crop_mask, head_bbox, body_bbox = self._bdr(src_img, tsf_img, src_smpl, tsf_smpl)
 
             self._real_src = src_img
             self._real_tsf = tsf_img
 
             self._bg_mask = torch.cat((src_crop_mask, tsf_crop_mask), dim=0)
-            if self._opt.bg_both:
-                self._input_G_bg = torch.cat([input_G_src_bg, input_G_tsf_bg], dim=0)
-            else:
-                self._input_G_bg = input_G_src_bg
             self._input_G_src = input_G_src
             self._input_G_tsf = input_G_tsf
             self._T = T
@@ -324,34 +308,25 @@ class Holoport(BaseModel):
 
     def forward(self, keep_data_for_visuals=False, return_estimates=False):
         # generate fake images
-        fake_bg, fake_src_color, fake_src_mask, fake_tsf_color, fake_tsf_mask = \
-            self._G.forward(self._input_G_bg, self._input_G_src, self._input_G_tsf, T=self._T)
+        fake_src_color, fake_src_mask, fake_tsf_color, fake_tsf_mask = \
+            self._G.forward(self._input_G_src, self._input_G_tsf, T=self._T)
 
-        bs = fake_src_color.shape[0]
-        fake_src_bg = fake_bg[0:bs]
-        if self._opt.bg_both:
-            fake_tsf_bg = fake_bg[bs:]
-            fake_src_imgs = fake_src_mask * fake_src_bg + (1 - fake_src_mask) * fake_src_color
-            fake_tsf_imgs = fake_tsf_mask * fake_tsf_bg + (1 - fake_tsf_mask) * fake_tsf_color
-        else:
-            fake_src_imgs = fake_src_mask * fake_src_bg + (1 - fake_src_mask) * fake_src_color
-            fake_tsf_imgs = fake_tsf_mask * fake_src_bg + (1 - fake_tsf_mask) * fake_tsf_color
-
+        fake_src_imgs = (1 - fake_src_mask) * fake_src_color
+        fake_tsf_imgs = (1 - fake_tsf_mask) * fake_tsf_color
         fake_masks = torch.cat([fake_src_mask, fake_tsf_mask], dim=0)
 
         # keep data for visualization
         if keep_data_for_visuals:
-            self.visual_imgs(fake_bg, fake_src_imgs, fake_tsf_imgs, fake_masks)
+            self.visual_imgs(fake_src_imgs, fake_tsf_imgs, fake_masks)
 
-        return fake_bg, fake_src_imgs, fake_tsf_imgs, fake_masks
+        return fake_src_imgs, fake_tsf_imgs, fake_masks
 
     def optimize_parameters(self, trainable=True, keep_data_for_visuals=False):
         if self._is_train:
-
             # run inference
-            fake_bg, fake_src_imgs, fake_tsf_imgs, fake_masks = self.forward(keep_data_for_visuals=keep_data_for_visuals)
+            fake_src_imgs, fake_tsf_imgs, fake_masks = self.forward(keep_data_for_visuals=keep_data_for_visuals)
 
-            loss_G = self._optimize_G(fake_bg, fake_src_imgs, fake_tsf_imgs, fake_masks)
+            loss_G = self._optimize_G(fake_src_imgs, fake_tsf_imgs, fake_masks)
 
             self._optimizer_G.zero_grad()
             loss_G.backward()
@@ -364,7 +339,7 @@ class Holoport(BaseModel):
                 loss_D.backward()
                 self._optimizer_D.step()
 
-    def _optimize_G(self, fake_bg, fake_src_imgs, fake_tsf_imgs, fake_masks):
+    def _optimize_G(self, fake_src_imgs, fake_tsf_imgs, fake_masks):
         fake_input_D = torch.cat([fake_tsf_imgs, self._input_G_tsf[:, 3:]], dim=1)
         d_fake_outs = self._D.forward(fake_input_D)
         self._loss_g_adv = self._compute_loss_D(d_fake_outs, 0) * self._opt.lambda_D_prob
@@ -440,25 +415,23 @@ class Holoport(BaseModel):
         # inputs
         visuals['1_real_img'] = self._vis_input
         visuals['2_input_tsf'] = self._vis_tsf
-        visuals['3_fake_bg'] = self._vis_fake_bg
 
         # outputs
-        visuals['4_fake_tsf'] = self._vis_fake_tsf
-        visuals['5_fake_src'] = self._vis_fake_src
-        visuals['6_fake_mask'] = self._vis_mask
+        visuals['3_fake_tsf'] = self._vis_fake_tsf
+        visuals['4_fake_src'] = self._vis_fake_src
+        visuals['5_fake_mask'] = self._vis_mask
 
         # batch outputs
-        visuals['7_batch_real_img'] = self._vis_batch_real
-        visuals['8_batch_fake_img'] = self._vis_batch_fake
+        visuals['6_batch_real_img'] = self._vis_batch_real
+        visuals['7_batch_fake_img'] = self._vis_batch_fake
 
         return visuals
 
     @torch.no_grad()
-    def visual_imgs(self, fake_bg, fake_src_imgs, fake_tsf_imgs, fake_masks):
+    def visual_imgs(self, fake_src_imgs, fake_tsf_imgs, fake_masks):
         ids = fake_masks.shape[0] // 2
         self._vis_input = util.tensor2im(self._real_src)
         self._vis_tsf = util.tensor2im(self._input_G_tsf[0, 0:3])
-        self._vis_fake_bg = util.tensor2im(fake_bg)
         self._vis_fake_src = util.tensor2im(fake_src_imgs)
         self._vis_fake_tsf = util.tensor2im(fake_tsf_imgs)
         self._vis_mask = util.tensor2maskim(fake_masks[ids])

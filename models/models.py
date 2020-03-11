@@ -53,6 +53,10 @@ class ModelsFactory(object):
             from .impersonator_trainer_aug import ImpersonatorAllSetTrain
             model = ImpersonatorAllSetTrain(*args, **kwargs)
 
+        elif model_name == 'holoportator_trainer':
+            from .holoport_trainer import Holoportator
+            model = Holoportator(*args, **kwargs)
+
         else:
             raise ValueError("Model %s not recognized." % model_name)
 
