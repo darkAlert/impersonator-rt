@@ -3,7 +3,7 @@ import torchvision.transforms as transforms
 from data.dataset import DatasetBase
 import numpy as np
 from utils import cv_utils
-from utils.util import load_pickle_file, ToTensor, ImageTransformer
+from utils.util import ToTensor, ImageTransformer
 
 
 __all__ = ['HoloBaseDataset', 'HoloDataset']
@@ -73,27 +73,22 @@ class HoloBaseDataset(DatasetBase):
 					cams_image_path.append(images_path)
 				assert (len(p) == len(cams_image_path[0]) for p in cams_image_path)
 
+				# Load smpls:
+				smpl_path = os.path.join(self._smpls_dir, line, 'smpl.npz')
+				smpl_data = np.load(smpl_path, encoding='latin1', allow_pickle=True)
+				smpl_cams = smpl_data['cams']
+				assert len(cams_image_path[0]) == len(smpl_cams), \
+					'{} != {}'.format(len(cams_image_path[0]), len(smpl_cams))
+
 				info = {
 					'images': cams_image_path,
 					'num_frames': len(cams_image_path[0]),
 					'num_cams': len(cams_image_path),
-					'smpl_cams': None,
-					'thetas': None,
-					'betas': None
+					'smpl_cams': smpl_cams,
+					'thetas': smpl_data['pose'],
+					'betas': smpl_data['shape']
 				}
 
-				# smpl_data = load_pickle_file(os.path.join(self._smpls_dir, line, 'pose_shape.pkl'))
-				# smpl_cams = smpl_data['cams']
-				# assert len(cams_image_path[0]) == len(smpl_cams), '{} != {}'.format(len(cams_image_path[0]), len(smpl_cams))
-
-				# info = {
-				# 	'images': cams_image_path,
-				# 	'smpl_cams': smpl_cams,
-				# 	'thetas': smpl_data['pose'],
-				# 	'betas': smpl_data['shape'],
-				# 	'num_frames': len(cams_image_path[0]),
-				# 	'num_cams': len(cams_image_path)
-				# }
 				vids_info.append(info)
 				self._dataset_size += info['num_frames']
 				self._num_videos += 1
@@ -136,10 +131,9 @@ class HoloDataset(HoloBaseDataset):
 			second_cam_id = np.random.randint(0, num_cams)
 		pair_ids = np.array([first_cam_id, second_cam_id], dtype=np.int32)
 
-		smpls = [None, None]
-		# smpls = np.concatenate((vid_info['smpl_cams'][pair_ids][frame_id],
-		# 						vid_info['thetas'][pair_ids][frame_id],
-		# 						vid_info['betas'][pair_ids][frame_id]), axis=1)
+		smpls = np.concatenate((vid_info['smpl_cams'][pair_ids][frame_id],
+								vid_info['thetas'][pair_ids][frame_id],
+								vid_info['betas'][pair_ids][frame_id]), axis=1)
 
 		images = []
 		cams_image_path = vid_info['images']

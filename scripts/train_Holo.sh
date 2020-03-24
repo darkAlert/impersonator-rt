@@ -8,7 +8,7 @@ gpu_ids=0
 dataset_model=Holo  # use iPER dataset
 data_dir=/home/darkalert/KazendiJob/Data/HoloVideo/Data  # need to be replaced!!!!!
 images_folder=avatars
-smpls_folder=smpls
+smpls_folder=smpl_aligned_lwgan
 train_ids_file=train.txt
 test_ids_file=val.txt
 

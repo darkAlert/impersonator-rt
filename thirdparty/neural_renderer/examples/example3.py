@@ -90,7 +90,7 @@ def main():
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))
         # cv2.imwrite('/tmp/_tmp_%04d.png' % num, image)
         cv2.imshow('test', image)
-        cv2.waitKey(1000)
+        cv2.waitKey(1)
 
     make_gif(args.filename_output)
 
