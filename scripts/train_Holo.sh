@@ -23,7 +23,7 @@ image_size=256
 
 # training configs
 load_path="None"
-batch_size=4
+batch_size=12
 lambda_rec=10.0
 lambda_tsf=10.0
 lambda_face=5.0

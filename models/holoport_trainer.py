@@ -286,6 +286,12 @@ class Holoportator(BaseModel):
 
             input_G_src, input_G_tsf, T, src_crop_mask, \
             tsf_crop_mask, head_bbox, body_bbox = self._bdr(src_img, tsf_img, src_smpl, tsf_smpl)
+            for i in range(head_bbox.shape[0]):
+                if head_bbox[i,0] > 255 or head_bbox[i,1] > 255 or head_bbox[i,2] > 255 or head_bbox[i,3] > 255 or head_bbox[i,1] - head_bbox[i,0] <= 0 or head_bbox[i,3] - head_bbox[i,2] <= 0:
+                    head_bbox[i,0] = 1
+                    head_bbox[i,1] = 51
+                    head_bbox[i,2] = 1
+                    head_bbox[i,3] = 51
 
             self._real_src = src_img
             self._real_tsf = tsf_img

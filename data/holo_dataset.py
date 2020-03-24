@@ -58,11 +58,12 @@ class HoloBaseDataset(DatasetBase):
 			total = len(lines)
 
 			for i, line in enumerate(lines):
+				if len(line) <= 1:
+					continue
+				# Get image paths:
 				cams_dir = os.path.join(self._vids_dir, line)
-
 				cams_path = [p.path for p in os.scandir(cams_dir) if p.is_dir()]
 				cams_path.sort()
-
 				cams_image_path = []
 				for cam_path in cams_path:
 					images_path = []
@@ -74,19 +75,22 @@ class HoloBaseDataset(DatasetBase):
 				assert (len(p) == len(cams_image_path[0]) for p in cams_image_path)
 
 				# Load smpls:
-				smpl_path = os.path.join(self._smpls_dir, line, 'smpl.npz')
-				smpl_data = np.load(smpl_path, encoding='latin1', allow_pickle=True)
-				smpl_cams = smpl_data['cams']
-				assert len(cams_image_path[0]) == len(smpl_cams), \
-					'{} != {}'.format(len(cams_image_path[0]), len(smpl_cams))
+				smpl_dir = os.path.join(self._smpls_dir, line)
+				cams_path = [p.path for p in os.scandir(smpl_dir) if p.is_dir()]
+				cams_path.sort()
+				cams_smpl = []
+				for c_path in cams_path:
+					smpl_path = os.path.join(c_path, 'smpl.npz')
+					with np.load(smpl_path, encoding='latin1', allow_pickle=True) as data:
+						cams_smpl.append(dict(data))
+				assert len(cams_image_path[0]) == cams_smpl[0]['cams'].shape[0], \
+					'{} != {}'.format(len(cams_image_path[0]), cams_smpl[0]['cams'].shape[0])
 
 				info = {
 					'images': cams_image_path,
 					'num_frames': len(cams_image_path[0]),
 					'num_cams': len(cams_image_path),
-					'smpl_cams': smpl_cams,
-					'thetas': smpl_data['pose'],
-					'betas': smpl_data['shape']
+					'smpl': cams_smpl,
 				}
 
 				vids_info.append(info)
@@ -131,9 +135,20 @@ class HoloDataset(HoloBaseDataset):
 			second_cam_id = np.random.randint(0, num_cams)
 		pair_ids = np.array([first_cam_id, second_cam_id], dtype=np.int32)
 
-		smpls = np.concatenate((vid_info['smpl_cams'][pair_ids][frame_id],
-								vid_info['thetas'][pair_ids][frame_id],
-								vid_info['betas'][pair_ids][frame_id]), axis=1)
+		# SMPL:
+		s1 = vid_info['smpl'][pair_ids[0]]['cams'][frame_id]
+		s2 = vid_info['smpl'][pair_ids[0]]['pose'][frame_id]
+		s3 = vid_info['smpl'][pair_ids[0]]['shape'][frame_id]
+		smpls_1 = np.concatenate((s1,s2,s3),axis=0)
+		smpls_1 = np.expand_dims(smpls_1, axis=0)
+
+		s1 = vid_info['smpl'][pair_ids[1]]['cams'][frame_id]
+		s2 = vid_info['smpl'][pair_ids[1]]['pose'][frame_id]
+		s3 = vid_info['smpl'][pair_ids[1]]['shape'][frame_id]
+		smpls_2 = np.concatenate((s1, s2, s3), axis=0)
+		smpls_2 = np.expand_dims(smpls_2, axis=0)
+
+		smpls = np.concatenate((smpls_1, smpls_2), axis=0)
 
 		images = []
 		cams_image_path = vid_info['images']

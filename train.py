@@ -7,8 +7,8 @@ from collections import OrderedDict
 
 
 class Train(object):
-    def __init__(self):
-        self._opt = TrainOptions().parse()
+    def __init__(self,args):
+        self._opt = args
         data_loader_train = CustomDatasetDataLoader(self._opt, is_for_train=True)
         data_loader_test = CustomDatasetDataLoader(self._opt, is_for_train=False)
 
@@ -137,4 +137,42 @@ class Train(object):
 
 
 if __name__ == "__main__":
-    Train()
+    args = TrainOptions().parse()
+
+    # args.gpu_ids = '0'               # if using multi-gpus, increasing the batch_size
+    #
+    # # dataset configs
+    # args.dataset_mode = 'Holo'
+    # args.data_dir = '/home/darkalert/KazendiJob/Data/HoloVideo/Data'      # need to be replaced!!!!!
+    # args.images_folder = 'avatars'
+    # args.smpls_folder = 'smpl_aligned_lwgan'
+    # args.train_ids_file = 'train.txt'
+    # args.test_ids_file = 'val.txt'
+    #
+    # # saving configs
+    # args.checkpoints_dir = '/home/darkalert/builds/impersonator/outputs'   # directory to save models, need to be replaced!!!!!
+    # args.name = 'Holo1'               # the directory is ${checkpoints_dir}/name, which is used to save the checkpoints.
+    #
+    # # model configs
+    # args.model = 'holoportator_trainer'
+    # args.gen_name = 'holoportator'
+    # args.image_size = 256
+    #
+    # # training configs
+    # args.load_path = 'None'
+    # args.batch_size = 8
+    # args.lambda_rec = 10.0
+    # args.lambda_tsf = 10.0
+    # args.lambda_face = 5.0
+    # args.lambda_style = 0.0
+    # args.lambda_mask = 1.0
+    # args.lambda_mask_smooth = 1.0
+    # args.nepochs_no_decay = 5         # fixing learning rate when epoch ranges in [0, 5]
+    # args.nepochs_decay = 25           # decreasing the learning rate when epoch ranges in [6, 25+5]
+    #
+    # args.mask_bce = True
+    # args.use_vgg = True
+    # args.use_face = True
+
+    Train(args)
+
