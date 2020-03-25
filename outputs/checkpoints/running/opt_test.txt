@@ -3,7 +3,7 @@ T_pose: False
 batch_size: 4
 bg_ks: 13
 bg_model: ./outputs/checkpoints/deepfillv2/net_epoch_50_id_G.pth
-bg_replace: True
+bg_replace: False
 body_seg: False
 cam_strategy: smooth
 checkpoints_dir: ./outputs/checkpoints/
@@ -17,31 +17,31 @@ front_warp: False
 ft_ks: 3
 gen_name: impersonator
 gpu_ids: 0
-has_detector: True
+has_detector: False
 hmr_model: assets/pretrains/hmr_tf2pt.pth
 image_size: 256
 images_folder: images_HD
 ip: 
 is_train: False
 load_epoch: 0
-load_path: ./outputs/checkpoints/my_iPER/net_epoch_26_id_G.pth
+load_path: ./outputs/checkpoints/lwb_imper_fashion_place/net_epoch_30_id_G.pth
 map_name: uv_seg
-model: viewer
+model: impersonator
 n_threads_test: 2
 name: running
 norm_type: instance
 only_vis: False
-output_dir: ./outputs/results/LWGtest_by_my_model/
+output_dir: ./outputs/results/
 part_info: assets/pretrains/smpl_part_info.json
 port: 31100
-post_tune: True
+post_tune: False
 pri_path: ./assets/samples/A_priors/imgs
 repeat_num: 6
-save_res: True
+save_res: False
 serial_batches: False
 smpl_model: assets/pretrains/smpl_model.pkl
 smpls_folder: smpls
-src_path: /home/darkalert/KazendiJob/Data/LWGtest/jason.jpeg
+src_path: 
 swap_part: body
 test_ids_file: val.txt
 tex_size: 3
