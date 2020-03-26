@@ -96,7 +96,7 @@ class HoloBaseDataset(DatasetBase):
 					'num_frames': len(cams_image_path[0]),
 					'num_cams': len(cams_image_path),
 					'smpl': cams_smpl,
-					'mode:': mode
+					'mode': mode
 				}
 
 				vids_info.append(info)
