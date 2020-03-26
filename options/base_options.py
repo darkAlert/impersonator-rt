@@ -35,7 +35,10 @@ class BaseOptions(object):
                                   help='which epoch to load? set to -1 to use latest cached model')
         self._parser.add_argument('--load_path', type=str,
                                   default='./outputs/checkpoints/lwb_imper_fashion_place/net_epoch_30_id_G.pth',
-                                  help='pretrained model path')
+                                  help='pretrained G model path')
+        self._parser.add_argument('--load_D_path', type=str,
+                                  default='./outputs/checkpoints/lwb_imper_fashion_place/net_epoch_30_id_D.pth',
+                                  help='pretrained D model path')
         self._parser.add_argument('--batch_size', type=int, default=4, help='input batch size')
         self._parser.add_argument('--time_step', type=int, default=10, help='time step size')
         self._parser.add_argument('--tex_size', type=int, default=3, help='input tex size')

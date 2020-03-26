@@ -171,8 +171,9 @@ class Holoportator(BaseModel):
         if not self._is_train or self._opt.load_epoch > 0:
             self.load()
         elif self._opt.load_path != 'None':
-            # ipdb.set_trace()
             self._load_params(self._G, self._opt.load_path, need_module=len(self._gpu_ids) > 1)
+            if self._opt.load_D_path != 'None':
+                self._load_params(self._D, self._opt.load_D_path, need_module=len(self._gpu_ids) > 1)
 
         # prefetch variables
         self._init_prefetch_inputs()
