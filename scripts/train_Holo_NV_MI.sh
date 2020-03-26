@@ -7,7 +7,7 @@ gpu_ids=0
 
 # dataset configs
 dataset_model=Holo
-data_dir=/home/darkalert/KazendiJob/Data/HoloVideo/Data  # need to be replaced!!!!!
+data_dir=/home/kazendi/Anton/Data/HoloVideo/Data  # need to be replaced!!!!!
 images_folder=avatars
 smpls_folder=smpl_aligned_lwgan
 train_ids_file=train.txt
@@ -23,11 +23,11 @@ gen_name=holoportator
 image_size=256
 
 # pretrained G and D
-load_G_path="./outputs/checkpoints/lwb_imper_fashion_place/net_epoch_30_id_G.pth"
-load_D_path="'./outputs/checkpoints/lwb_imper_fashion_place/net_epoch_30_id_D.pth'"
+load_G_path="./outputs/Holo1/net_epoch_27_id_G.pth"
+load_D_path="./outputs/Holo1/net_epoch_27_id_D.pth"
 
 # training configs
-batch_size=12
+batch_size=14
 lambda_rec=10.0
 lambda_tsf=10.0
 lambda_face=5.0
