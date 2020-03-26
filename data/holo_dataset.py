@@ -4,16 +4,20 @@ from data.dataset import DatasetBase
 import numpy as np
 from utils import cv_utils
 from utils.util import ToTensor, ImageTransformer
-
+from enum import Enum
 
 __all__ = ['HoloBaseDataset', 'HoloDataset']
 
 
 class HoloBaseDataset(DatasetBase):
+	class Mode(Enum):
+		NOVEL_VIEW = 1
+		MOTION_IMIT = 2
 
 	def __init__(self, opt, is_for_train):
 		super(HoloBaseDataset, self).__init__(opt, is_for_train)
 		self._name = 'HoloBaseDataset'
+		self._intervals = opt.intervals
 
 		# read dataset
 		self._read_dataset_paths()
@@ -45,9 +49,10 @@ class HoloBaseDataset(DatasetBase):
 		self._dataset_size = 0
 		use_ids_filename = self._opt.train_ids_file if self._is_for_train else self._opt.test_ids_file
 		use_ids_filepath = os.path.join(self._root, use_ids_filename)
-		self._vids_info = self._read_vids_info(use_ids_filepath)
+		self._vids_info = self._read_vids_info(use_ids_filepath, mode=self.Mode.NOVEL_VIEW)
+		self._vids_info = self._vids_info + self._read_vids_info(use_ids_filepath, mode=self.Mode.MOTION_IMIT)
 
-	def _read_vids_info(self, file_path):
+	def _read_vids_info(self, file_path, mode=Mode.NOVEL_VIEW):
 		vids_info = []
 		with open(file_path, 'r') as reader:
 
@@ -91,11 +96,17 @@ class HoloBaseDataset(DatasetBase):
 					'num_frames': len(cams_image_path[0]),
 					'num_cams': len(cams_image_path),
 					'smpl': cams_smpl,
+					'mode:': mode
 				}
 
 				vids_info.append(info)
-				self._dataset_size += info['num_frames']
 				self._num_videos += 1
+				if mode == self.Mode.NOVEL_VIEW:
+					self._dataset_size += info['num_frames']
+				elif mode == self.Mode.MOTION_IMIT:
+					self._dataset_size += info['num_frames'] // self._intervals
+				else:
+					raise NotImplementedError
 				print('loading video = {}, {} / {}'.format(line, i, total))
 
 				if self._opt.debug:
@@ -128,23 +139,33 @@ class HoloDataset(HoloBaseDataset):
 		num_frames = vid_info['num_frames']
 		num_cams = vid_info['num_cams']
 
-		frame_id = np.random.randint(0, num_frames)
-		first_cam_id = np.random.randint(0, num_cams)
-		second_cam_id = np.random.randint(0, num_cams)
-		while first_cam_id == second_cam_id:
-			second_cam_id = np.random.randint(0, num_cams)
-		pair_ids = np.array([first_cam_id, second_cam_id], dtype=np.int32)
+		# Select frame and camera ids:
+		cam_ids, frame_ids = [], []
+		if vid_info['mode'] == self.Mode.NOVEL_VIEW:
+			frame_ids.append(np.random.randint(0, num_frames))
+			frame_ids.append(frame_ids[-1])
+			cam_ids.append(np.random.randint(0, num_cams))
+			cam_ids.append(np.random.randint(0, num_cams))
+			while cam_ids[0] == cam_ids[1]:
+				cam_ids[1] = np.random.randint(0, num_cams)
+		elif vid_info['mode'] == self.Mode.MOTION_IMIT:
+			frame_ids.append(np.random.randint(0, num_frames))
+			frame_ids.append(np.random.randint(0, num_frames))
+			cam_ids.append(np.random.randint(0, num_cams))
+			cam_ids.append(np.random.randint(0, num_cams))
+		else:
+			raise NotImplementedError
 
 		# SMPL:
-		s1 = vid_info['smpl'][pair_ids[0]]['cams'][frame_id]
-		s2 = vid_info['smpl'][pair_ids[0]]['pose'][frame_id]
-		s3 = vid_info['smpl'][pair_ids[0]]['shape'][frame_id]
+		s1 = vid_info['smpl'][cam_ids[0]]['cams'][frame_ids[0]]
+		s2 = vid_info['smpl'][cam_ids[0]]['pose'][frame_ids[0]]
+		s3 = vid_info['smpl'][cam_ids[0]]['shape'][frame_ids[0]]
 		smpls_1 = np.concatenate((s1,s2,s3),axis=0)
 		smpls_1 = np.expand_dims(smpls_1, axis=0)
 
-		s1 = vid_info['smpl'][pair_ids[1]]['cams'][frame_id]
-		s2 = vid_info['smpl'][pair_ids[1]]['pose'][frame_id]
-		s3 = vid_info['smpl'][pair_ids[1]]['shape'][frame_id]
+		s1 = vid_info['smpl'][cam_ids[1]]['cams'][frame_ids[1]]
+		s2 = vid_info['smpl'][cam_ids[1]]['pose'][frame_ids[1]]
+		s3 = vid_info['smpl'][cam_ids[1]]['shape'][frame_ids[1]]
 		smpls_2 = np.concatenate((s1, s2, s3), axis=0)
 		smpls_2 = np.expand_dims(smpls_2, axis=0)
 
@@ -152,8 +173,8 @@ class HoloDataset(HoloBaseDataset):
 
 		images = []
 		cams_image_path = vid_info['images']
-		for t in pair_ids:
-			image_path = cams_image_path[t][frame_id]
+		for ci,fi in zip(cam_ids,frame_ids):
+			image_path = cams_image_path[ci][fi]
 			image = cv_utils.read_cv2_img(image_path)
 			images.append(image)
 
