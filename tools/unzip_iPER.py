@@ -8,7 +8,7 @@ import cv2
 # Replacing them as your own folder
 dataset_video_root_path = '/home/darkalert/KazendiJob/Data/impersonator/iPER_1024_video_release'
 save_images_root_path = '/home/darkalert/KazendiJob/Data/impersonator/iPER_1024_images'
-target_size = (256,256)
+target_size = None#(256,256)
 
 def get_names(path_to_src, absolute_path = False):
     path_list = []
@@ -25,7 +25,7 @@ def get_names(path_to_src, absolute_path = False):
 
 def extract_one_video(video_path, save_dir):
     os.makedirs(save_dir, exist_ok=True)
-    os.system("ffmpeg -i %s -start_number 0 %s/frame%%08d.png > /dev/null 2>&1" % (video_path, save_dir))
+    os.system("ffmpeg -i %s -start_number 0 -qscale:v 2 %s/frame%%08d.jpeg > /dev/null 2>&1" % (video_path, save_dir))
 
 
 def main():
@@ -45,7 +45,8 @@ def main():
         paths = get_names(video_images_dir, True)
         for path in paths:
             img = cv2.imread(path, 1)
-            img = cv2.resize(img, target_size, interpolation=cv2.INTER_AREA)
+            if target_size is not None:
+                img = cv2.resize(img, target_size, interpolation=cv2.INTER_AREA)
             cv2.imwrite(path,img)
         
 
