@@ -37,7 +37,7 @@ load_G_path="./outputs/Holo2/net_epoch_30_id_G.pth"
 load_D_path="./outputs/Holo2/net_epoch_30_id_D.pth"
 
 # training configs
-batch_size=10
+batch_size=14
 lambda_rec=10.0
 lambda_tsf=10.0
 lambda_face=5.0
