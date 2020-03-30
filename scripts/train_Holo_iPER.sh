@@ -35,6 +35,8 @@ image_size=256
 # pretrained G and D
 load_G_path="./outputs/Holo2/net_epoch_30_id_G.pth"
 load_D_path="./outputs/Holo2/net_epoch_30_id_D.pth"
+load_epoch=0
+n_threads_train=6
 
 # training configs
 batch_size=14
@@ -63,6 +65,8 @@ python3 train.py --gpu_ids ${gpu_ids}        \
     --checkpoints_dir  ${checkpoints_dir}   \
     --load_path        ${load_G_path}       \
     --load_D_path      ${load_D_path}       \
+    --load_epoch       ${load_epoch}        \
+    --n_threads_train  ${n_threads_train}   \
     --model            ${model}             \
     --gen_name         ${gen_name}          \
     --name             ${name}              \
