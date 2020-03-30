@@ -23,6 +23,7 @@ image_size: 256
 images_folder: images_HD
 ip: 
 is_train: False
+load_D_path: ./outputs/checkpoints/lwb_imper_fashion_place/net_epoch_30_id_D.pth
 load_epoch: 0
 load_path: ./outputs/checkpoints/lwb_imper_fashion_place/net_epoch_30_id_G.pth
 map_name: uv_seg

@@ -17,7 +17,7 @@ class HoloBaseDataset(DatasetBase):
 	def __init__(self, opt, is_for_train):
 		super(HoloBaseDataset, self).__init__(opt, is_for_train)
 		self._name = 'HoloBaseDataset'
-		self._intervals = opt.intervals
+		self._intervals = opt.holo_intervals
 
 		# read dataset
 		self._read_dataset_paths()
@@ -40,14 +40,14 @@ class HoloBaseDataset(DatasetBase):
 		return self._dataset_size
 
 	def _read_dataset_paths(self):
-		self._root = self._opt.data_dir
-		self._vids_dir = os.path.join(self._root, self._opt.images_folder)
-		self._smpls_dir = os.path.join(self._root, self._opt.smpls_folder)
+		self._root = self._opt.holo_data_dir
+		self._vids_dir = os.path.join(self._root, self._opt.holo_images_folder)
+		self._smpls_dir = os.path.join(self._root, self._opt.holo_smpls_folder)
 
 		# read video list
 		self._num_videos = 0
 		self._dataset_size = 0
-		use_ids_filename = self._opt.train_ids_file if self._is_for_train else self._opt.test_ids_file
+		use_ids_filename = self._opt.holo_train_ids_file if self._is_for_train else self._opt.holo_test_ids_file
 		use_ids_filepath = os.path.join(self._root, use_ids_filename)
 		self._vids_info = self._read_vids_info(use_ids_filepath, mode=self.Mode.NOVEL_VIEW)
 		self._vids_info = self._vids_info + self._read_vids_info(use_ids_filepath, mode=self.Mode.MOTION_IMIT)
@@ -171,6 +171,7 @@ class HoloDataset(HoloBaseDataset):
 
 		smpls = np.concatenate((smpls_1, smpls_2), axis=0)
 
+		# Images:
 		images = []
 		cams_image_path = vid_info['images']
 		for ci,fi in zip(cam_ids,frame_ids):

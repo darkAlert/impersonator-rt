@@ -12,12 +12,14 @@ class BaseOptions(object):
         self._parser.add_argument('--checkpoints_dir', type=str, default='./outputs/checkpoints/',
                                   help='models are saved here')
 
-        self._parser.add_argument('--data_dir', type=str, default='/p300/datasets/iPER', help='path to dataset')
         self._parser.add_argument('--dataset_mode', type=str, default='iPER', help='chooses dataset to be used')
-        self._parser.add_argument('--train_ids_file', type=str, default='train.txt', help='file containing train ids')
-        self._parser.add_argument('--test_ids_file', type=str, default='val.txt', help='file containing test ids')
-        self._parser.add_argument('--images_folder', type=str, default='images_HD', help='images folder')
-        self._parser.add_argument('--smpls_folder', type=str, default='smpls', help='smpls folder')
+
+        # iPER datase:
+        self._parser.add_argument('--data_dir', type=str, default='/p300/datasets/iPER', help='path to iPER dataset')
+        self._parser.add_argument('--train_ids_file', type=str, default='train.txt', help='iPER file containing train ids')
+        self._parser.add_argument('--test_ids_file', type=str, default='val.txt', help='iPER file containing test ids')
+        self._parser.add_argument('--images_folder', type=str, default='images_HD', help='iPER images folder')
+        self._parser.add_argument('--smpls_folder', type=str, default='smpls', help='iPER smpls folder')
 
         self._parser.add_argument('--map_name', type=str, default='uv_seg', help='mapping function')
         self._parser.add_argument('--part_info', type=str, default='assets/pretrains/smpl_part_info.json',

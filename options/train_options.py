@@ -5,6 +5,16 @@ class TrainOptions(BaseOptions):
     def initialize(self):
         BaseOptions.initialize(self)
 
+        # holo dataset
+        # Holo dataset:
+        self._parser.add_argument('--holo_data_dir', type=str, default='/', help='path to Holo dataset')
+        self._parser.add_argument('--holo_train_ids_file', type=str, default='train.txt',
+                                  help='Holo file containing train ids')
+        self._parser.add_argument('--holo_test_ids_file', type=str, default='val.txt', help='Holo file containing test ids')
+        self._parser.add_argument('--holo_images_folder', type=str, default='images_HD', help='Holo images folder')
+        self._parser.add_argument('--holo_smpls_folder', type=str, default='smpls', help='Holo smpls folder')
+        self._parser.add_argument('--holo_intervals', type=int, default=10, help='the interval between frames of the holo dataset')
+
         # use place dataset if need
         self._parser.add_argument('--place_dir', type=str, default='/p300/places365_standard', help='place folder')
         self._parser.add_argument('--place_bs', type=int, default=4, help='input batch size of place dataset')

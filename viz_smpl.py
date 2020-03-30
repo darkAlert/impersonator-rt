@@ -2,6 +2,7 @@ import os
 import numpy as np
 import cv2
 import torch
+import joblib
 from networks.networks import HumanModelRecovery
 from utils.nmr import SMPLRenderer
 from holo.data_struct import DataStruct
@@ -102,19 +103,24 @@ def get_file_paths(path):
     return file_paths
 
 def project_smpl_onto_image(root_dir, img_dir, smpl_path, output_dir, frame_id=0):
-    img_dir = os.path.join(root_dir, img_dir)
+    # img_dir = os.path.join(root_dir, img_dir)
     smpl_path = os.path.join(root_dir, smpl_path)
-    output_dir = os.path.join(root_dir, output_dir)
+    # output_dir = os.path.join(root_dir, output_dir)
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # device = torch.device('cpu')
 
     # Parse image paths:
-    img_paths = get_file_paths(img_dir)
+    # img_paths = get_file_paths(img_dir)
 
     # Load smpl:
-    with np.load(smpl_path, encoding='latin1', allow_pickle=True) as data:
-        smpl_data = dict(data)
+    format = smpl_path.split('/')[-1].split('.')[-1]
+    if format == 'npz':
+        with np.load(smpl_path, encoding='latin1', allow_pickle=True) as data:
+            smpl_data = dict(data)
+    else:
+        smpl_data = joblib.load(smpl_path, 'r')
+
     cams = smpl_data['cams'][frame_id]
     pose = smpl_data['pose'][frame_id]
     shape = smpl_data['shape'][frame_id]
@@ -135,7 +141,7 @@ def project_smpl_onto_image(root_dir, img_dir, smpl_path, output_dir, frame_id=0
     print ('bbox:',bbox)
 
     img = src_fim.permute(1,2,0).cpu().numpy()
-    path = '/home/darkalert/KazendiJob/Data/HoloVideo/Data/smpl.png'
+    path = '/home/darkalert/KazendiJob/Data/iPER/Data/smpl.png'
     cv2.imwrite(path, img)
 
     # print (src_info)
@@ -184,11 +190,17 @@ def main():
 
     root_dir = '/home/darkalert/KazendiJob/Data/HoloVideo/Data'
     img_dir = 'avatars/person_1/light-100_temp-5600/garment_1/freestyle/cam1'
-    smpl_path = 'smpl_aligned_lwgan/person_2/light-100_temp-5600/garments_2/freestyle/cam3/smpl.npz'
+    smpl_path = 'smpls_by_vibe_aligned_lwgan/person_1/light-100_temp-5600/garment_1/freestyle/cam1/smpl.npz'
     output_dir = 'lwgan_smpl_test'
-    project_smpl_onto_image(root_dir, img_dir, smpl_path, output_dir, frame_id=259)
+    # project_smpl_onto_image(root_dir, img_dir, smpl_path, output_dir, frame_id=259)
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    root_dir = '/home/darkalert/KazendiJob/Data/iPER/Data'
+    img_dir = None
+    smpl_path = 'smpls_for_lwgan/001/1/1/smpl.npz'
+    # smpl_path = 'smpls/001/1/1/pose_shape.pkl'
+    output_dir = None
+    # project_smpl_onto_image(root_dir, img_dir, smpl_path, output_dir, frame_id=100)
+
     # check_head_bboxes('/home/darkalert/KazendiJob/Data/HoloVideo/Data/smpl_aligned_lwgan')
 
 
