@@ -35,7 +35,6 @@ image_size=256
 # pretrained G and D
 load_G_path="./outputs/Holo2/net_epoch_30_id_G.pth"
 load_D_path="./outputs/Holo2/net_epoch_30_id_D.pth"
-load_epoch=0
 n_threads_train=6
 
 # training configs
@@ -47,8 +46,8 @@ lambda_style=0.0
 lambda_mask=1.0
 #lambda_mask=2.5
 lambda_mask_smooth=1.0
-nepochs_no_decay=4  # fixing learning rate when epoch ranges in [0, 4]
-nepochs_decay=16    # decreasing the learning rate when epoch ranges in [4, 16+4]
+nepochs_no_decay=5  # fixing learning rate when epoch ranges in [0, 5]
+nepochs_decay=15    # decreasing the learning rate when epoch ranges in [5, 15+5]
 
 python3 train.py --gpu_ids ${gpu_ids}        \
     --data_dir  ${data_dir}                 \
@@ -65,7 +64,6 @@ python3 train.py --gpu_ids ${gpu_ids}        \
     --checkpoints_dir  ${checkpoints_dir}   \
     --load_path        ${load_G_path}       \
     --load_D_path      ${load_D_path}       \
-    --load_epoch       ${load_epoch}        \
     --n_threads_train  ${n_threads_train}   \
     --model            ${model}             \
     --gen_name         ${gen_name}          \
