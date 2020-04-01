@@ -118,10 +118,10 @@ if __name__ == "__main__":
     # Data:
     test_opt.root_dir = '/home/darkalert/KazendiJob/Data/HoloVideo/Data'
     test_opt.frames_dir = 'avatars'
-    test_opt.smpl_dir = 'smpl_aligned_lwgan'
+    test_opt.smpl_dir = 'smpls_by_vibe_aligned_lwgan'
 
-    test_opt.scene_path = 'person_3/light-100_temp-5600/garments_1/freestyle'
-    test_opt.output_dir = 'test/holoportator/holo2i11_p3_l100_g1_freestyle'
+    test_opt.scene_path = 'person_9/light-100_temp-5600/garments_2/rotation'
+    test_opt.output_dir = 'test/holoportator/holo2-i30_p9-l100-g2-rotation'
     test_opt.src_cam = 'cam1'
     test_opt.frames_range = (0,-1)
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     test_opt.gen_name = "holoportator"
     test_opt.image_size = 256
     test_opt.checkpoints_dir = './outputs/checkpoints'
-    test_opt.load_path = '/home/darkalert/builds/impersonator/outputs/Holo_NV_MI/net_epoch_11_id_G.pth'
+    test_opt.load_path = '/home/darkalert/builds/impersonator/outputs/Holo2/net_epoch_30_id_G.pth'
     test_opt.bg_ks = 11
     test_opt.ft_ks = 3
     test_opt.has_detector = False

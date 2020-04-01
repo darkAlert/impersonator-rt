@@ -20,7 +20,7 @@ def read_cv2_img(path):
     return img
 
 
-def save_cv2_img(img, path, image_size=None, normalize=False):
+def save_cv2_img(img, path, image_size=None, normalize=False, black_to_white=None):
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
     # print('normalize = {}'.format(normalize))
@@ -31,6 +31,10 @@ def save_cv2_img(img, path, image_size=None, normalize=False):
     if normalize:
         img = (img + 1) / 2.0 * 255
         img = img.astype(np.uint8)
+
+    if black_to_white is not None:
+        img[np.where((img < [5, 5, 5]).all(axis=2))] = [255, 255, 255]
+
 
     cv2.imwrite(path, img)
     return img

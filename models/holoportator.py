@@ -46,7 +46,7 @@ class Holoportator(BaseModel):
                                           tsf_dim=3+self._G_cond_nc, repeat_num=self._opt.repeat_num)
 
         if self._opt.load_path:
-            self._load_params(net, self._opt.load_path)
+            self._load_params(net, self._opt.load_path, remove_bg_model=True)
         elif self._opt.load_epoch > 0:
             self._load_network(net, 'G', self._opt.load_epoch)
         else:
@@ -127,7 +127,7 @@ class Holoportator(BaseModel):
             tgt_smpl = tgt_smpls[t] if tgt_smpls is not None else None
 
             tsf_inputs = self.transfer_params_by_smpl(tgt_smpl, cam_strategy, t=t)
-            preds = self.forward(tsf_inputs, self.tsf_info['T'])
+            preds,_ = self.forward(tsf_inputs, self.tsf_info['T'])
 
             preds = preds[0].permute(1, 2, 0)
             preds = preds.cpu().numpy()
@@ -194,6 +194,32 @@ class Holoportator(BaseModel):
 
         return tsf_inputs
 
+    def view(self, rt, t, output_dir=None):
+        # get source info
+        src_info = self.src_info
+        src_mesh = self.src_info['verts']
+        tsf_mesh = self.rotate_trans(rt, t, src_mesh)
+
+        tsf_f2verts, tsf_fim, tsf_wim = self.render.render_fim_wim(src_info['cam'], tsf_mesh)
+        tsf_cond, _ = self.render.encode_fim(src_info['cam'], tsf_mesh, fim=tsf_fim, transpose=True)
+
+        T = self.render.cal_bc_transform(src_info['p2verts'], tsf_fim, tsf_wim)
+        tsf_img = F.grid_sample(src_info['img'], T)
+        tsf_inputs = torch.cat([tsf_img, tsf_cond], dim=1)
+
+        preds, tsf_mask = self.forward(tsf_inputs, T)
+
+        if self._opt.front_warp:
+            preds = self.warp_front(preds, tsf_mask)
+
+        preds = preds[0].permute(1, 2, 0)
+        preds = preds.cpu().detach().numpy()
+
+        if output_dir is not None:
+            cv_utils.save_cv2_img(preds, output_dir, normalize=True)
+
+        return preds
+
 
     def forward(self, tsf_inputs, T):
         src_encoder_outs, src_resnet_outs = self.src_info['feats']
@@ -204,7 +230,7 @@ class Holoportator(BaseModel):
         if self._opt.front_warp:
             pred_imgs = self.warp_front(pred_imgs, tsf_mask)
 
-        return pred_imgs
+        return pred_imgs, tsf_mask
 
 
     def warp_front(self, preds, mask):
@@ -212,3 +238,12 @@ class Holoportator(BaseModel):
         preds = (1 - front_mask) * preds + self.tsf_info['tsf_img'] * front_mask * (1 - mask)
         # preds = torch.clamp(preds + self.tsf_info['tsf_img'] * front_mask, -1, 1)
         return preds
+
+    def rotate_trans(self, rt, t, X):
+        R = cv_utils.euler2matrix(rt)    # (3 x 3)
+
+        R = torch.FloatTensor(R)[None, :, :].cuda()
+        t = torch.FloatTensor(t)[None, None, :].cuda()
+
+        # (bs, Nv, 3) + (bs, 1, 3)
+        return torch.bmm(X, R) + t

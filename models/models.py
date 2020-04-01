@@ -160,16 +160,22 @@ class BaseModel(object):
 
         self._load_params(network, load_path, need_module)
 
-    def _load_params(self, network, load_path, need_module=False):
+    def _load_params(self, network, load_path, need_module=False, remove_bg_model=None):
         assert os.path.exists(
             load_path), 'Weights file not found. Have you trained a model!? We are not providing one %s' % load_path
 
-        def load(model, orig_state_dict):
+        def load(model, orig_state_dict, remove_bg_model=None):
             state_dict = OrderedDict()
             for k, v in orig_state_dict.items():
+                # Remove unexpected keys (for HOLOPORT):
+                if remove_bg_model is not None:
+                    if k[:8] == 'bg_model' or k[:15] == 'module.bg_model':
+                        continue
+
                 # remove 'module'
                 name = k[7:] if 'module' in k else k
                 state_dict[name] = v
+
 
             # load params
             model.load_state_dict(state_dict)
@@ -178,7 +184,7 @@ class BaseModel(object):
         if need_module:
             network.load_state_dict(save_data)
         else:
-            load(network, save_data)
+            load(network, save_data, remove_bg_model)
 
         print('Loading net: %s' % load_path)
 
