@@ -141,7 +141,7 @@ def project_smpl_onto_image(root_dir, img_dir, smpl_path, output_dir, frame_id=0
     print ('bbox:',bbox)
 
     img = src_fim.permute(1,2,0).cpu().numpy()
-    path = '/home/darkalert/KazendiJob/Data/iPER/Data/smpl.png'
+    path = '/home/darkalert/KazendiJob/Data/HoloVideo/Data/smpl_fix.png'
     cv2.imwrite(path, img)
 
     # print (src_info)
@@ -192,11 +192,11 @@ def main():
     img_dir = 'avatars/person_1/light-100_temp-5600/garment_1/freestyle/cam1'
     smpl_path = 'smpls_by_vibe_aligned_lwgan/person_1/light-100_temp-5600/garment_1/freestyle/cam1/smpl.npz'
     output_dir = 'lwgan_smpl_test'
-    # project_smpl_onto_image(root_dir, img_dir, smpl_path, output_dir, frame_id=259)
+    # project_smpl_onto_image(root_dir, img_dir, smpl_path, output_dir, frame_id=33)
 
     root_dir = '/home/darkalert/KazendiJob/Data/iPER/Data'
     img_dir = None
-    smpl_path = 'smpls_for_lwgan/001/1/1/smpl.npz'
+    smpl_path = 'smpls_by_vibe_lwgan_fix/001/1/1/smpl.npz'
     # smpl_path = 'smpls/001/1/1/pose_shape.pkl'
     output_dir = None
     # project_smpl_onto_image(root_dir, img_dir, smpl_path, output_dir, frame_id=100)

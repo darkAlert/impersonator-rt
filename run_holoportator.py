@@ -67,7 +67,7 @@ def prepare_test_data(frames_dir, smpls_dir):
     return test_data, n
 
 
-def holoportate(test_opt):
+def holoportate(test_opt, one_shot=False):
     # Load and prepare test data:
     smpls_dir = os.path.join(test_opt.root_dir, test_opt.smpl_dir, test_opt.scene_path)
     frames_dir = os.path.join(test_opt.root_dir, test_opt.frames_dir, test_opt.scene_path)
@@ -91,15 +91,20 @@ def holoportate(test_opt):
 
     # Init Holoportator:
     holoport = Holoportator(test_opt)
+    personalized = False
 
     for idx in range(test_opt.frames_range[0], test_opt.frames_range[1]):
         print ('Processing frame', idx)
 
         # Personalize model:
-        img_path = test_data['frame_paths'][test_opt.src_cam][idx]
-        smpl = test_data['smpls'][test_opt.src_cam][idx].unsqueeze(0)
-        out_path_src = os.path.join(output_dir, test_opt.src_cam, str(idx).zfill(5) + '.jpeg')
-        holoport.personalize(src_path=img_path, src_smpl=smpl, output_path=out_path_src)
+        if not personalized:
+            img_path = test_data['frame_paths'][test_opt.src_cam][idx]
+            smpl = test_data['smpls'][test_opt.src_cam][idx].unsqueeze(0)
+            out_path_src = os.path.join(output_dir, test_opt.src_cam, str(idx).zfill(5) + '.jpeg')
+            holoport.personalize(src_path=img_path, src_smpl=smpl, output_path=out_path_src)
+
+        if one_shot:
+            personalized = True
 
         # Inference:
         tgt_smpls, out_paths = [], []
@@ -115,14 +120,24 @@ if __name__ == "__main__":
     # Parse options:
     test_opt = TestOptions().parse()
 
-    # Data:
-    test_opt.root_dir = '/home/darkalert/KazendiJob/Data/HoloVideo/Data'
-    test_opt.frames_dir = 'avatars'
-    test_opt.smpl_dir = 'smpls_by_vibe_aligned_lwgan'
+    # # Data (Holo):
+    # test_opt.root_dir = '/home/darkalert/KazendiJob/Data/HoloVideo/Data'
+    # test_opt.frames_dir = 'avatars'
+    # test_opt.smpl_dir = 'smpls_by_vibe_aligned_lwgan'
+    #
+    # test_opt.scene_path = 'person_9/light-100_temp-5600/garments_2/rotation'
+    # test_opt.output_dir = 'test/holoportator/holo2-i30_p9-l100-g2-rotation'
+    # test_opt.src_cam = 'cam1'
+    # test_opt.frames_range = (0,-1)
 
-    test_opt.scene_path = 'person_9/light-100_temp-5600/garments_2/rotation'
-    test_opt.output_dir = 'test/holoportator/holo2-i30_p9-l100-g2-rotation'
-    test_opt.src_cam = 'cam1'
+    # Data (iPER)::
+    test_opt.root_dir = '/home/darkalert/KazendiJob/Data/iPER/Data'
+    test_opt.frames_dir = 'avatars'
+    test_opt.smpl_dir = 'smpls_by_vibe_lwgan'
+
+    test_opt.scene_path = '010/1'
+    test_opt.output_dir = 'test/holoport_view/view_010-1_h3e20_1shot'
+    test_opt.src_cam = '1'
     test_opt.frames_range = (0,-1)
 
     # Model:
@@ -130,7 +145,7 @@ if __name__ == "__main__":
     test_opt.gen_name = "holoportator"
     test_opt.image_size = 256
     test_opt.checkpoints_dir = './outputs/checkpoints'
-    test_opt.load_path = '/home/darkalert/builds/impersonator/outputs/Holo2/net_epoch_30_id_G.pth'
+    test_opt.load_path = '/home/darkalert/builds/impersonator/outputs/Holo_iPER/net_epoch_20_id_G.pth'
     test_opt.bg_ks = 11
     test_opt.ft_ks = 3
     test_opt.has_detector = False
@@ -138,5 +153,5 @@ if __name__ == "__main__":
     test_opt.front_warp = False
     test_opt.save_res = True
 
-    holoportate(test_opt)
+    holoportate(test_opt, one_shot=True)
 

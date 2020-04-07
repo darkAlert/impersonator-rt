@@ -4,6 +4,7 @@ import torch
 from models.holoportator import Holoportator
 from options.test_options import TestOptions
 from tqdm import tqdm
+import time
 
 
 def get_file_paths(path, exts=('.jpeg','.jpg','.png')):
@@ -170,6 +171,7 @@ def holoport_view_seq(test_opt, steps):
 
     # Init Holoportator:
     holoport = Holoportator(test_opt)
+    start = time.time()
 
     for idx in range(test_opt.frames_range[0], test_opt.frames_range[1]):
         print ('Processing frame', idx)
@@ -192,33 +194,34 @@ def holoport_view_seq(test_opt, steps):
         if step_i >= steps:
             step_i = 0
 
-    print ('All done!')
+    end = time.time()
+    print ('All done! Time per frame:', (end - start)/test_opt.frames_range[1]-test_opt.frames_range[0])
 
 
 if __name__ == "__main__":
     # Parse options:
     test_opt = TestOptions().parse()
 
-    # Data (Holo):
-    test_opt.root_dir = '/home/darkalert/KazendiJob/Data/HoloVideo/Data'
-    test_opt.frames_dir = 'avatars'
-    test_opt.smpl_dir = 'smpls_by_vibe_aligned_lwgan'
-
-    test_opt.scene_path = 'person_2/light-100_temp-5600/garments_2/front_position'
-    test_opt.output_dir = 'test/holoport_view/view_p2-l100-g2-front_h3e20'
-    test_opt.src_cam = 'cam1'
-    test_opt.frames_range = (0,-1)
-
-    # # Data (iPER):
-    # test_opt.root_dir = '/home/darkalert/KazendiJob/Data/iPER/Data'
-    # test_opt.frames_dir = 'iPER_1024_images'
-    # # test_opt.frames_dir = 'avatars'
-    # test_opt.smpl_dir = 'smpls_by_vibe_lwgan'
+    # # Data (Holo):
+    # test_opt.root_dir = '/home/darkalert/KazendiJob/Data/HoloVideo/Data'
+    # test_opt.frames_dir = 'avatars'
+    # test_opt.smpl_dir = 'smpls_by_vibe_aligned_lwgan'
     #
-    # test_opt.scene_path = '001/1'
-    # test_opt.output_dir = 'test/holoport_view/view_001-1_imper'
-    # test_opt.src_cam = '2'
+    # test_opt.scene_path = 'person_2/light-100_temp-5600/garments_2/front_position'
+    # test_opt.output_dir = 'test/holoport_view/view_p2-l100-g2-front_h3e20'
+    # test_opt.src_cam = 'cam1'
     # test_opt.frames_range = (0,-1)
+
+    # Data (iPER):
+    test_opt.root_dir = '/home/darkalert/KazendiJob/Data/iPER/Data'
+    # test_opt.frames_dir = 'iPER_1024_images'
+    test_opt.frames_dir = 'avatars'
+    test_opt.smpl_dir = 'smpls_by_vibe_lwgan'
+
+    test_opt.scene_path = '001/1'
+    test_opt.output_dir = 'test/holoport_view/view_001-1_imper'
+    test_opt.src_cam = '2'
+    test_opt.frames_range = (0,-1)
 
 
     # Model:
