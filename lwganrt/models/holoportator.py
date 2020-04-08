@@ -1,14 +1,13 @@
-import os
 import torch
 import torch.nn.functional as F
 import numpy as np
 from tqdm import tqdm
 from .models import BaseModel
-from networks.networks import NetworksFactory, HumanModelRecovery
-from utils.nmr import SMPLRenderer
-from utils.detectors import PersonMaskRCNNDetector
-import utils.cv_utils as cv_utils
-import utils.util as util
+from lwganrt.networks.networks import NetworksFactory, HumanModelRecovery
+from lwganrt.utils.nmr import SMPLRenderer
+from lwganrt.utils.detectors import PersonMaskRCNNDetector
+import lwganrt.utils.cv_utils as cv_utils
+import lwganrt.utils.util as util
 
 
 class Holoportator(BaseModel):
