@@ -1,6 +1,6 @@
 import argparse
 import os
-from utils import util
+from lwganrt.utils import util
 
 
 class BaseOptions(object):
@@ -22,15 +22,22 @@ class BaseOptions(object):
         self._parser.add_argument('--smpls_folder', type=str, default='smpls', help='iPER smpls folder')
 
         self._parser.add_argument('--map_name', type=str, default='uv_seg', help='mapping function')
-        self._parser.add_argument('--part_info', type=str, default='assets/pretrains/smpl_part_info.json',
+        self._parser.add_argument('--part_info', type=str, default='lwganrt/assets/pretrains/smpl_part_info.json',
                                   help='smpl part info path.')
-        self._parser.add_argument('--uv_mapping', type=str, default='assets/pretrains/mapper.txt',
+        self._parser.add_argument('--front_info', type=str, default='lwganrt/assets/pretrains/front_facial.json',
+                                  help='smpl front facial info path.')
+        self._parser.add_argument('--head_info', type=str, default='lwganrt/assets/pretrains/head.json',
+                                  help='smpl head info path.')
+
+        self._parser.add_argument('--uv_mapping', type=str, default='lwganrt/assets/pretrains/mapper.txt',
                                   help='uv mapping.')
-        self._parser.add_argument('--hmr_model', type=str, default='assets/pretrains/hmr_tf2pt.pth',
+        self._parser.add_argument('--hmr_model', type=str, default='lwganrt/assets/pretrains/hmr_tf2pt.pth',
                                   help='pretrained hmr model path.')
-        self._parser.add_argument('--smpl_model', type=str, default='assets/pretrains/smpl_model.pkl',
+        self._parser.add_argument('--smpl_model', type=str, default='lwganrt/assets/pretrains/smpl_model.pkl',
                                   help='pretrained smpl model path.')
-        self._parser.add_argument('--face_model', type=str, default='assets/pretrains/sphere20a_20171020.pth',
+        self._parser.add_argument('--smpl_faces', type=str, default='lwganrt/assets/pretrains/smpl_faces.npy',
+                                  help='smpl faces.')
+        self._parser.add_argument('--face_model', type=str, default='lwganrt/assets/pretrains/sphere20a_20171020.pth',
                                   help='pretrained face model path.')
 
         self._parser.add_argument('--load_epoch', type=int, default=-1,

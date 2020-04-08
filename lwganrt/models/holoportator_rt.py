@@ -9,9 +9,10 @@ import lwganrt.utils.util as util
 
 
 class HoloportatorRT(BaseModel):
-    def __init__(self, opt):
+    def __init__(self, opt, device):
         super(HoloportatorRT, self).__init__(opt)
         self._name = 'HoloportatorRT'
+        self.device = device
 
         self._create_networks()
 
@@ -22,15 +23,22 @@ class HoloportatorRT(BaseModel):
 
     def _create_networks(self):
         # 1. create generator
-        self.generator = self._create_generator().cuda()
+        self.generator = self._create_generator().to(self.device)
 
         # 2. create hmr
-        self.hmr = self._create_hmr().cuda()
+        self.hmr = self._create_hmr().to(self.device)
 
         # 3. create render
-        self.render = SMPLRenderer(image_size=self._opt.image_size, tex_size=self._opt.tex_size,
-                                   has_front=self._opt.front_warp, fill_back=False).cuda()
-
+        self.render = SMPLRenderer(face_path=self._opt.smpl_faces,
+                                   uv_map_path=self._opt.uv_mapping,
+                                   image_size=self._opt.image_size,
+                                   tex_size=self._opt.tex_size,
+                                   has_front=self._opt.front_warp,
+                                   fill_back=False,
+                                   part_info=self._opt.part_info,
+                                   front_info=self._opt.front_info,
+                                   head_info=self._opt.head_info
+                                   ).to(self.device)
 
     def _create_generator(self):
         net = NetworksFactory.get_by_name(self._opt.gen_name, src_dim=3+self._G_cond_nc,
@@ -116,14 +124,14 @@ class HoloportatorRT(BaseModel):
     def rotate_trans(self, rt, t, X):
         R = cv_utils.euler2matrix(rt)    # (3 x 3)
 
-        R = torch.FloatTensor(R)[None, :, :].cuda()
-        t = torch.FloatTensor(t)[None, None, :].cuda()
+        R = torch.FloatTensor(R)[None, :, :].to(self.device)
+        t = torch.FloatTensor(t)[None, None, :].to(self.device)
 
         # (bs, Nv, 3) + (bs, 1, 3)
         return torch.bmm(X, R) + t
 
     @staticmethod
-    def prepare_input(img, smpl, image_size=224, device=None):
+    def prepare_input(img, smpl, image_size=256, device=None):
         # resize image and convert the color space from [0, 255] to [-1, 1]
         if isinstance(img, np.ndarray):
             prep_img = cv_utils.transform_img(img, image_size, transpose=True) * 2 - 1.0

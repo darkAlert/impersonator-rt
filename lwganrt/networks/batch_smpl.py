@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from utils.util import load_pickle_file
+from lwganrt.utils.util import load_pickle_file
 
 VERT_NOSE = 331
 VERT_EAR_L = 3485

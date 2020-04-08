@@ -19,27 +19,27 @@ class DatasetFactory(object):
     @staticmethod
     def get_by_name(dataset_name, opt, is_for_train):
         if dataset_name == 'iPER':
-            from data.imper_dataset import ImPerDataset
+            from lwganrt.data.imper_dataset import ImPerDataset
             dataset = ImPerDataset(opt, is_for_train)
 
         elif dataset_name == 'fashion':
-            from data.fashion_dataset import FashionPairDataset
+            from lwganrt.data.fashion_dataset import FashionPairDataset
             dataset = FashionPairDataset(opt, is_for_train)
 
         elif dataset_name == 'iPER_place':
-            from data.imper_fashion_place_dataset import ImPerPlaceDataset
+            from lwganrt.data.imper_fashion_place_dataset import ImPerPlaceDataset
             dataset = ImPerPlaceDataset(opt, is_for_train)
 
         elif dataset_name == 'iPER_fashion_place':
-            from data.imper_fashion_place_dataset import ImPerFashionPlaceDataset
+            from lwganrt.data.imper_fashion_place_dataset import ImPerFashionPlaceDataset
             dataset = ImPerFashionPlaceDataset(opt, is_for_train)
 
         elif dataset_name == 'Holo':
-            from data.holo_dataset import HoloDataset
+            from lwganrt.data.holo_dataset import HoloDataset
             dataset = HoloDataset(opt, is_for_train)
 
         elif dataset_name == 'Holo_iPER':
-            from data.holo_imper_dataset import HoloImPerDataset
+            from lwganrt.data.holo_imper_dataset import HoloImPerDataset
             dataset = HoloImPerDataset(opt, is_for_train)
 
         else:

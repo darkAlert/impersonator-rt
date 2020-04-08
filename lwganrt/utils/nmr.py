@@ -101,10 +101,13 @@ def hamilton_product(qa, qb):
 
 
 class SMPLRenderer(nn.Module):
-    def __init__(self, face_path='assets/pretrains/smpl_faces.npy',
-                 uv_map_path='assets/pretrains/mapper.txt', map_name='uv_seg', tex_size=3, image_size=256,
+    def __init__(self, face_path='lwganrt/assets/pretrains/smpl_faces.npy',
+                 uv_map_path='lwganrt/assets/pretrains/mapper.txt', map_name='uv_seg', tex_size=3, image_size=256,
                  anti_aliasing=True, fill_back=False, background_color=(0, 0, 0), viewing_angle=30, near=0.1, far=25.0,
-                 has_front=False):
+                 has_front=False,
+                 part_info='lwganrt/assets/pretrains/smpl_part_info.json',
+                 front_info='lwganrt/assets/pretrains/front_facial.json',
+                 head_info='lwganrt/assets/pretrains/head.json'):
         """
         Args:
             face_path:
@@ -144,18 +147,37 @@ class SMPLRenderer(nn.Module):
 
         # (nf, T*T, 2)
         img2uv_sampler = torch.tensor(mesh.create_uvsampler(uv_map_path, tex_size=tex_size)).float()
-        map_fn = torch.tensor(mesh.create_mapping(map_name, uv_map_path, contain_bg=True,
-                                                  fill_back=fill_back)).float()
+        map_fn = torch.tensor(
+            mesh.create_mapping(map_name,
+                                mapping_path=uv_map_path,
+                                part_info=part_info,
+                                front_info=front_info,
+                                head_info=head_info,
+                                contain_bg=True,
+                                fill_back=fill_back)).float()
+
         self.register_buffer('img2uv_sampler', img2uv_sampler)
         self.register_buffer('map_fn', map_fn)
 
-        back_map_fn = torch.tensor(mesh.create_mapping('back', uv_map_path, contain_bg=True,
-                                                       fill_back=fill_back)).float()
+        back_map_fn = torch.tensor(
+            mesh.create_mapping('back',
+                                mapping_path=uv_map_path,
+                                part_info=part_info,
+                                front_info=front_info,
+                                head_info=head_info,
+                                contain_bg=True,
+                                fill_back=fill_back)).float()
         self.register_buffer('back_map_fn', back_map_fn)
 
         if has_front:
-            front_map_fn = torch.tensor(mesh.create_mapping('front', uv_map_path, contain_bg=True,
-                                                            fill_back=fill_back)).float()
+            front_map_fn = torch.tensor(
+                mesh.create_mapping('front',
+                                    mapping_path=uv_map_path,
+                                    part_info=part_info,
+                                    front_info=front_info,
+                                    head_info=head_info,
+                                    contain_bg=True,
+                                    fill_back=fill_back)).float()
             self.register_buffer('front_map_fn', front_map_fn)
         else:
             self.front_map_fn = None
