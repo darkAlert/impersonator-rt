@@ -1,8 +1,8 @@
 import os
 import numpy as np
 import torch
-from models.holoportator import Holoportator
-from options.test_options import TestOptions
+from lwganrt.models.holoportator import Holoportator
+from lwganrt.options.test_options import TestOptions
 from tqdm import tqdm
 import time
 
