@@ -130,22 +130,22 @@ class HoloportatorRT(BaseModel):
         # (bs, Nv, 3) + (bs, 1, 3)
         return torch.bmm(X, R) + t
 
-    @staticmethod
-    def prepare_input(img, smpl, image_size=256, device=None):
-        # resize image and convert the color space from [0, 255] to [-1, 1]
-        if isinstance(img, np.ndarray):
-            prep_img = cv_utils.transform_img(img, image_size, transpose=True) * 2 - 1.0
-            prep_img = torch.tensor(prep_img, dtype=torch.float32).unsqueeze(0)
-        else:
-            raise NotImplementedError
 
-        if isinstance(smpl, np.ndarray):
-            prep_smpl = torch.tensor(smpl, dtype=torch.float32).unsqueeze(0)
-        else:
-            raise NotImplementedError
+def prepare_input(img, smpl, image_size=256, device=None):
+    # resize image and convert the color space from [0, 255] to [-1, 1]
+    if isinstance(img, np.ndarray):
+        prep_img = cv_utils.transform_img(img, image_size, transpose=True) * 2 - 1.0
+        prep_img = torch.tensor(prep_img, dtype=torch.float32).unsqueeze(0)
+    else:
+        raise NotImplementedError
 
-        if device is not None:
-            prep_img = prep_img.to(device)
-            prep_smpl = prep_smpl.to(device)
+    if isinstance(smpl, np.ndarray):
+        prep_smpl = torch.tensor(smpl, dtype=torch.float32).unsqueeze(0)
+    else:
+        raise NotImplementedError
 
-        return prep_img, prep_smpl
+    if device is not None:
+        prep_img = prep_img.to(device)
+        prep_smpl = prep_smpl.to(device)
+
+    return prep_img, prep_smpl
