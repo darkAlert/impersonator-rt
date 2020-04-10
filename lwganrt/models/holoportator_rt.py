@@ -140,7 +140,10 @@ def prepare_input(img, smpl, image_size=256, device=None):
         raise NotImplementedError
 
     if isinstance(smpl, np.ndarray):
-        prep_smpl = torch.tensor(smpl, dtype=torch.float32).unsqueeze(0)
+        if smpl.ndim == 1:
+            prep_smpl = torch.tensor(smpl, dtype=torch.float32).unsqueeze(0)
+        else:
+            prep_smpl = torch.tensor(smpl, dtype=torch.float32)
     else:
         raise NotImplementedError
 
