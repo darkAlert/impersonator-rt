@@ -1,7 +1,9 @@
-# Impersonator
+# Impersonator-RT
 PyTorch implementation of our ICCV 2019 paper:
 
 Liquid Warping GAN: A Unified Framework for Human Motion Imitation, Appearance Transfer and Novel View Synthesis
+
+Adapted for Real-Time inference
 
 ## Getting Started
 Python 3.6+, Pytorch 1.2, torchvision 0.4, cuda10.0, at least `3.8GB` GPU memory and other requirements.
