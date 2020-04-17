@@ -85,7 +85,7 @@ class BaseOptions(object):
     def parse(self):
         if not self._initialized:
             self.initialize()
-        self._opt = self._parser.parse_args()
+        self._opt, unknown = self._parser.parse_known_args()
 
         self.set_zero_thread_for_Win()
 
