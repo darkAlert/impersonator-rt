@@ -3,8 +3,5 @@ scipy
 h5py
 numpy
 ipdb
-<<<<<<< HEAD
 matplotlib
 tensorboardX
-=======
->>>>>>> rebase
