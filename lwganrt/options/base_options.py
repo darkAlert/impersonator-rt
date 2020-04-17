@@ -89,8 +89,8 @@ class BaseOptions(object):
 
         if params is not None:
             for k in params.keys():
-                if k in self._opt:
-                    self._opt[k] = params[k]
+                if hasattr(self._opt, str(k)):
+                    setattr(self._opt, str(k), params[k])
 
         self.set_zero_thread_for_Win()
 
