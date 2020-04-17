@@ -3,30 +3,6 @@ PyTorch implementation of our ICCV 2019 paper:
 
 Liquid Warping GAN: A Unified Framework for Human Motion Imitation, Appearance Transfer and Novel View Synthesis
 
-**Please clone the newest codes.**
-
-[[paper]](https://arxiv.org/pdf/1909.12224.pdf) [[website]](https://svip-lab.github.io/project/impersonator) [[Supplemental Material]](https://svip-lab.github.io/project_img/impersonator/4701-supp.pdf) [[Dataset]](https://svip-lab.github.io/dataset/iPER_dataset.html)
-
-<p float="center">
-	<img src='assets/visuals/motion/Sweaters-id_0000088807_4_full.jpg' width="135"/>
-  	<img src='assets/visuals/motion/mixamo_0007_Sweaters-id_0000088807_4_full.gif' width="135"/>
-  	<img src='assets/visuals/appearance/Sweaters-id_0000337302_4_full.jpg' width="135"/>
-	<img src='assets/visuals/appearance/Sweaters-id_0000337302_4_full.gif' width="135"/>
-	<img src='assets/visuals/novel/Jackets_Vests-id_0000071603_4_full.jpg' width="135"/>
-    <img src='assets/visuals/novel/Jackets_Vests-id_0000071603_4_full.gif' width="135"/>
-    <img src='assets/visuals/motion/009_5_1_000.jpg' width="135"/>    
-  	<img src='assets/visuals/motion/mixamo_0031_000.gif' width="135"/>
-  	<img src='assets/visuals/appearance/001_19_1_000.jpg' width="135"/>
-	<img src='assets/visuals/appearance/001_19_1_000.gif' width="135"/>
-	<img src='assets/visuals/novel/novel_3.jpg' width="135"/>
-    <img src='assets/visuals/novel/novel_3.gif' width="135"/>
-</p>
-
-## Update News
-- [x] 10/05/2019, optimize the minimal requirements of GPU memory (at least `3.8GB` available).
-
-- [x] 10/24/2019, Imper-1.2.2, add the training document [train.md](./doc/train.md).
-
 ## Getting Started
 Python 3.6+, Pytorch 1.2, torchvision 0.4, cuda10.0, at least `3.8GB` GPU memory and other requirements.
 All codes are tested on Linux Distributions (Ubutun 16.04 is recommended), and other platforms have not been tested yet.
@@ -161,7 +137,7 @@ therefore, to eliminate the ambiguity and make it consistent with others,
 we update the results in Table 1 with the original definition in the [latest paper](https://arxiv.org/pdf/1909.12224.pdf).
 
 ## Citation
-![thunmbnail](assets/thumbnail.jpg)
+
 ```
 @InProceedings{lwb2019,
     title={Liquid Warping GAN: A Unified Framework for Human Motion Imitation, Appearance Transfer and Novel View Synthesis},
