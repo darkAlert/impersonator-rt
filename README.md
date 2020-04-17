@@ -17,7 +17,7 @@ apt-get install ffmpeg
 
 ### Installation
 ```shell
-cd thirdparty/neural_renderer
+cd thirdparty/neural_renderer 
 python setup.py install
 ```
 
