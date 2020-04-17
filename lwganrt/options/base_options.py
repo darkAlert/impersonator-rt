@@ -82,10 +82,15 @@ class BaseOptions(object):
             if 'n_threads_train' in self._opt.__dict__:
                 self._opt.__setattr__('n_threads_train', 0)
 
-    def parse(self):
+    def parse(self, params=None):
         if not self._initialized:
             self.initialize()
         self._opt, unknown = self._parser.parse_known_args()
+
+        if params is not None:
+            for k in params.keys():
+                if k in self._opt:
+                    self._opt[k] = params[k]
 
         self.set_zero_thread_for_Win()
 
