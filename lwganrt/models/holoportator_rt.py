@@ -23,10 +23,10 @@ class HoloportatorRT(BaseModel):
 
     def _create_networks(self):
         # 1. create generator
-        self.generator = self._create_generator().to(self.device)
+        self.generator = self._create_generator()
 
         # 2. create hmr
-        self.hmr = self._create_hmr().to(self.device)
+        self.hmr = self._create_hmr()
 
         # 3. create render
         self.render = SMPLRenderer(face_path=self._opt.smpl_faces,
@@ -37,13 +37,13 @@ class HoloportatorRT(BaseModel):
                                    fill_back=False,
                                    part_info=self._opt.part_info,
                                    front_info=self._opt.front_info,
-                                   head_info=self._opt.head_info
-                                   ).to(self.device)
+                                   head_info=self._opt.head_info,
+                                   device = self.device)
 
     def _create_generator(self):
         net = NetworksFactory.get_by_name(self._opt.gen_name, src_dim=3+self._G_cond_nc,
-                                          tsf_dim=3+self._G_cond_nc, repeat_num=self._opt.repeat_num)
-
+                                          tsf_dim=3+self._G_cond_nc, repeat_num=self._opt.repeat_num,
+                                          device=self.device)
         if self._opt.load_path:
             self._load_params(net, self._opt.load_path, remove_bg_model=True)
         elif self._opt.load_epoch > 0:
@@ -52,12 +52,13 @@ class HoloportatorRT(BaseModel):
             raise ValueError('load_path {} is empty and load_epoch {} is 0'.format(
                 self._opt.load_path, self._opt.load_epoch))
         net.eval()
+        self._load_params(net, self._opt.load_path, remove_bg_model=True)
 
         return net
 
 
     def _create_hmr(self):
-        hmr = HumanModelRecovery(self._opt.smpl_model)
+        hmr = HumanModelRecovery(self._opt.smpl_model, device=self.device)
         saved_data = torch.load(self._opt.hmr_model)
         hmr.load_state_dict(saved_data)
         hmr.eval()

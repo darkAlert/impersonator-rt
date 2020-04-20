@@ -176,7 +176,6 @@ class BaseModel(object):
                 name = k[7:] if 'module' in k else k
                 state_dict[name] = v
 
-
             # load params
             model.load_state_dict(state_dict)
 

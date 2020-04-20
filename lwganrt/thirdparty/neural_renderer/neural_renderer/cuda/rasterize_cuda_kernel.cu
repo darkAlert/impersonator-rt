@@ -624,6 +624,8 @@ std::vector<at::Tensor> forward_face_index_map_cuda(
         int return_alpha,
         int return_depth) {
 
+    cudaSetDevice(faces.get_device());
+
     const auto batch_size = faces.size(0);
     const auto num_faces = faces.size(1);
     const int threads = 512;

@@ -82,7 +82,7 @@ class BaseOptions(object):
             if 'n_threads_train' in self._opt.__dict__:
                 self._opt.__setattr__('n_threads_train', 0)
 
-    def parse(self, params=None):
+    def parse(self, params=None, set_cuda_env=True):
         if not self._initialized:
             self.initialize()
         self._opt, unknown = self._parser.parse_known_args()
@@ -101,7 +101,7 @@ class BaseOptions(object):
         self._set_and_check_load_epoch()
 
         # get and set gpus
-        self._get_set_gpus()
+        self._get_set_gpus(set_cuda_env=set_cuda_env)
 
         args = vars(self._opt)
 
@@ -133,13 +133,14 @@ class BaseOptions(object):
             assert self._opt.load_epoch < 1, 'Model for epoch %i not found' % self._opt.load_epoch
             self._opt.load_epoch = 0
 
-    def _get_set_gpus(self):
+    def _get_set_gpus(self, set_cuda_env=True):
         os.environ['CUDA_DEVICES_ORDER'] = "PCI_BUS_ID"
 
-        if len(self._opt.gpu_ids) > 0:
-            os.environ['CUDA_VISIBLE_DEVICES'] = self._opt.gpu_ids
-        else:
-            os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+        if set_cuda_env:
+            if len(self._opt.gpu_ids) > 0:
+                os.environ['CUDA_VISIBLE_DEVICES'] = self._opt.gpu_ids
+            else:
+                os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
     def _print(self, args):
         print('------------ Options -------------')

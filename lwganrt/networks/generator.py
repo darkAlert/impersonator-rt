@@ -67,9 +67,10 @@ class ResNetGenerator(NetworkBase):
 
 class ResUnetGenerator(NetworkBase):
     """Generator. Encoder-Decoder Architecture."""
-    def __init__(self, conv_dim=64, c_dim=5, repeat_num=6, k_size=4, n_down=2):
+    def __init__(self, conv_dim=64, c_dim=5, repeat_num=6, k_size=4, n_down=2, device=None):
         super(ResUnetGenerator, self).__init__()
         self._name = 'resunet_generator'
+        self.device = device if device is not None else torch.device('cuda')
 
         self.repeat_num = repeat_num
         self.n_down = n_down
@@ -93,14 +94,14 @@ class ResUnetGenerator(NetworkBase):
 
             curr_dim = curr_dim * 2
 
-        self.encoders = nn.Sequential(*encoders)
+        self.encoders = nn.Sequential(*encoders).to(self.device)
 
         # Bottleneck
         resnets = []
         for i in range(repeat_num):
             resnets.append(ResidualBlock(dim_in=curr_dim, dim_out=curr_dim))
 
-        self.resnets = nn.Sequential(*resnets)
+        self.resnets = nn.Sequential(*resnets).to(self.device)
 
         # Up-Sampling
         decoders = []
@@ -120,18 +121,18 @@ class ResUnetGenerator(NetworkBase):
 
             curr_dim = curr_dim // 2
 
-        self.decoders = nn.Sequential(*decoders)
-        self.skippers = nn.Sequential(*skippers)
+        self.decoders = nn.Sequential(*decoders).to(self.device)
+        self.skippers = nn.Sequential(*skippers).to(self.device)
 
         layers = []
         layers.append(nn.Conv2d(curr_dim, 3, kernel_size=7, stride=1, padding=3, bias=False))
         layers.append(nn.Tanh())
-        self.img_reg = nn.Sequential(*layers)
+        self.img_reg = nn.Sequential(*layers).to(self.device)
 
         layers = []
         layers.append(nn.Conv2d(curr_dim, 1, kernel_size=7, stride=1, padding=3, bias=False))
         layers.append(nn.Sigmoid())
-        self.attetion_reg = nn.Sequential(*layers)
+        self.attetion_reg = nn.Sequential(*layers).to(self.device)
 
     def inference(self, x):
         # encoder, 0, 1, 2, 3 -> [256, 128, 64, 32]
@@ -322,7 +323,7 @@ class ImpersonatorGenerator(NetworkBase):
 
 class HoloportGenerator(NetworkBase):
     """Generator. Encoder-Decoder Architecture."""
-    def __init__(self, src_dim, tsf_dim, conv_dim=64, repeat_num=6):
+    def __init__(self, src_dim, tsf_dim, conv_dim=64, repeat_num=6, device=None):
         super(HoloportGenerator, self).__init__()
         self._name = 'holoport_generator'
 
@@ -330,10 +331,10 @@ class HoloportGenerator(NetworkBase):
         self.repeat_num = repeat_num
 
         # source generator
-        self.src_model = ResUnetGenerator(conv_dim=conv_dim, c_dim=src_dim, repeat_num=repeat_num, k_size=3, n_down=self.n_down)
+        self.src_model = ResUnetGenerator(conv_dim=conv_dim, c_dim=src_dim, repeat_num=repeat_num, k_size=3, n_down=self.n_down, device=device)
 
         # transfer generator
-        self.tsf_model = ResUnetGenerator(conv_dim=conv_dim, c_dim=tsf_dim, repeat_num=repeat_num, k_size=3, n_down=self.n_down)
+        self.tsf_model = ResUnetGenerator(conv_dim=conv_dim, c_dim=tsf_dim, repeat_num=repeat_num, k_size=3, n_down=self.n_down, device=device)
 
     def forward(self, src_inputs, tsf_inputs, T):
 

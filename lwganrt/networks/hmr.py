@@ -258,14 +258,15 @@ class HumanModelRecovery(nn.Module):
         extracted from encoder in a iteration way
     """
 
-    def __init__(self, smpl_pkl_path, feature_dim=2048, theta_dim=85, iterations=3):
+    def __init__(self, smpl_pkl_path, feature_dim=2048, theta_dim=85, iterations=3, device=None):
         super(HumanModelRecovery, self).__init__()
+        self.device = device if device is not None else torch.device('cuda')
 
         # define resnet50_v2
-        self.resnet = preActResNet50()
+        self.resnet = preActResNet50().to(self.device)
 
         # define smpl
-        self.smpl = SMPL(pkl_path=smpl_pkl_path)
+        self.smpl = SMPL(pkl_path=smpl_pkl_path, device=self.device)
 
         self.feature_dim = feature_dim
         self.theta_dim = theta_dim

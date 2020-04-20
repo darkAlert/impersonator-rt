@@ -107,7 +107,8 @@ class SMPLRenderer(nn.Module):
                  has_front=False,
                  part_info='lwganrt/assets/pretrains/smpl_part_info.json',
                  front_info='lwganrt/assets/pretrains/front_facial.json',
-                 head_info='lwganrt/assets/pretrains/head.json'):
+                 head_info='lwganrt/assets/pretrains/head.json',
+                 device = None):
         """
         Args:
             face_path:
@@ -123,9 +124,9 @@ class SMPLRenderer(nn.Module):
             far:
             has_front:
         """
-
         super(SMPLRenderer, self).__init__()
 
+        self.device = device if device is not None else torch.device('cuda')
         self.background_color = background_color
         self.anti_aliasing = anti_aliasing
         self.image_size = image_size
@@ -135,18 +136,21 @@ class SMPLRenderer(nn.Module):
         faces = np.load(face_path)
         self.tex_size = tex_size
         self.base_nf = faces.shape[0]
-        self.register_buffer('coords', self.create_coords(tex_size))
+        self.register_buffer('coords', self.create_coords(tex_size, device=self.device))
 
         # fill back
         if self.fill_back:
             faces = np.concatenate((faces, faces[:, ::-1]), axis=0)
 
-        faces = torch.tensor(faces.astype(np.int32)).int()
+        faces = torch.tensor(faces.astype(np.int32), dtype=torch.int, device=self.device)
         self.nf = faces.shape[0]
         self.register_buffer('faces', faces)
 
         # (nf, T*T, 2)
-        img2uv_sampler = torch.tensor(mesh.create_uvsampler(uv_map_path, tex_size=tex_size)).float()
+        img2uv_sampler = torch.tensor(
+            mesh.create_uvsampler(uv_map_path, tex_size=tex_size),
+            dtype=torch.float32, device=self.device)
+
         map_fn = torch.tensor(
             mesh.create_mapping(map_name,
                                 mapping_path=uv_map_path,
@@ -154,7 +158,8 @@ class SMPLRenderer(nn.Module):
                                 front_info=front_info,
                                 head_info=head_info,
                                 contain_bg=True,
-                                fill_back=fill_back)).float()
+                                fill_back=fill_back),
+            dtype=torch.float32, device=self.device)
 
         self.register_buffer('img2uv_sampler', img2uv_sampler)
         self.register_buffer('map_fn', map_fn)
@@ -166,7 +171,8 @@ class SMPLRenderer(nn.Module):
                                 front_info=front_info,
                                 head_info=head_info,
                                 contain_bg=True,
-                                fill_back=fill_back)).float()
+                                fill_back=fill_back),
+            dtype=torch.float32, device=self.device)
         self.register_buffer('back_map_fn', back_map_fn)
 
         if has_front:
@@ -177,7 +183,8 @@ class SMPLRenderer(nn.Module):
                                     front_info=front_info,
                                     head_info=head_info,
                                     contain_bg=True,
-                                    fill_back=fill_back)).float()
+                                    fill_back=fill_back),
+                dtype=torch.float32, device=self.device)
             self.register_buffer('front_map_fn', front_map_fn)
         else:
             self.front_map_fn = None
@@ -297,6 +304,7 @@ class SMPLRenderer(nn.Module):
         # rasterization
         faces = nr.vertices_to_faces(vertices, faces)
         fim, wim = nr.rasterize_face_index_map_and_weight_map(faces, self.image_size, False)
+
         return faces, fim, wim
 
     def render_depth(self, cam, vertices):
@@ -492,17 +500,20 @@ class SMPLRenderer(nn.Module):
         return samples
 
     @staticmethod
-    def create_coords(tex_size=3):
+    def create_coords(tex_size=3, device=None):
         """
         :param tex_size: int
         :return: 2 x (tex_size * tex_size)
         """
+        if device is  None:
+            device = torch.device('cuda')
+
         if tex_size == 1:
             step = 1
         else:
             step = 1 / (tex_size - 1)
 
-        alpha_beta = torch.arange(0, 1+step, step, dtype=torch.float32).cuda()
+        alpha_beta = torch.arange(0, 1+step, step, dtype=torch.float32, device=device)
         xv, yv = torch.meshgrid([alpha_beta, alpha_beta])
 
         coords = torch.stack([xv.flatten(), yv.flatten()], dim=0)

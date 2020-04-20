@@ -233,12 +233,13 @@ def batch_orth_proj_idrot(X, camera, device="cpu"):
 
 
 class SMPL(nn.Module):
-    def __init__(self, pkl_path, rotate=False):
+    def __init__(self, pkl_path, rotate=False, device=None):
         """
         pkl_path is the path to a SMPL model
         """
         super(SMPL, self).__init__()
         self.rotate = rotate
+        self.device = device if device is not None else torch.device('cuda')
 
         # -- Load SMPL params --
         dd = load_pickle_file(pkl_path)
@@ -246,39 +247,46 @@ class SMPL(nn.Module):
         # define faces
         # self.register_buffer('faces', torch.from_numpy(undo_chumpy(dd['f']).astype(np.int32)).type(dtype=torch.int32))
         self.faces = torch.from_numpy(dd['f'].astype(np.int32)).type(dtype=torch.int32)
+        self.faces = self.faces.to(self.device)
 
         # Mean template vertices
-        self.register_buffer('v_template', torch.FloatTensor(dd['v_template']))
+        self.register_buffer('v_template',
+                             torch.tensor(dd['v_template'],
+                                          dtype=torch.float32, device=self.device))
         # Size of mesh [Number of vertices, 3], (6890, 3)
         self.size = [self.v_template.shape[0], 3]
         self.num_betas = dd['shapedirs'].shape[-1]
         # Shape blend shape basis (shapedirs): (6980, 3, 10)
         # reshaped to (6980*3, 10), transposed to (10, 6980*3)
-        self.register_buffer('shapedirs', torch.FloatTensor(np.reshape(
-            dd['shapedirs'], [-1, self.num_betas]).T))
+        self.register_buffer('shapedirs',
+                             torch.tensor(np.reshape(dd['shapedirs'], [-1, self.num_betas]).T,
+                                          dtype=torch.float32, device=self.device))
 
         # Regressor for joint locations given shape -> (24, 6890)
         # Transpose to shape (6890, 24)
-        self.register_buffer('J_regressor', torch.FloatTensor(
-            np.asarray(dd['J_regressor'].T.todense())))
+        self.register_buffer('J_regressor',
+                             torch.tensor(np.asarray(dd['J_regressor'].T.todense()),
+                                          dtype=torch.float32, device=self.device))
 
         # Pose blend shape basis: (6890, 3, 207)
         num_pose_basis = dd['posedirs'].shape[-1]
 
         # Pose blend pose basis is reshaped to (6890*3, 207)
         # posedirs is transposed into (207, 6890*3)
-        self.register_buffer('posedirs', torch.FloatTensor(np.reshape(
-            dd['posedirs'], [-1, num_pose_basis]).T))
+        self.register_buffer('posedirs',
+                             torch.tensor(np.reshape(dd['posedirs'], [-1, num_pose_basis]).T,
+                                          dtype=torch.float32, device=self.device))
 
         # indices of parents for each joints
         self.parents = np.array(dd['kintree_table'][0].astype(np.int32))
 
         # LBS weights (6890, 24)
-        self.register_buffer('weights', torch.FloatTensor(dd['weights']))
+        self.register_buffer('weights',
+                             torch.tensor(dd['weights'], dtype=torch.float32, device=self.device))
 
         # This returns 19 keypoints: 6890 x 19
-        joint_regressor = torch.FloatTensor(
-            np.asarray(dd['cocoplus_regressor'].T.todense()))
+        joint_regressor = torch.tensor(np.asarray(dd['cocoplus_regressor'].T.todense()),
+                                       dtype=torch.float32, device=self.device)
 
         self.register_buffer('joint_regressor', joint_regressor)
 
@@ -300,7 +308,6 @@ class SMPL(nn.Module):
           - Verts: N x 6980 x 3
         """
         device = beta.device
-
         num_batch = beta.shape[0]
 
         # 1. Add shape blend shapes
