@@ -52,7 +52,6 @@ class HoloportatorRT(BaseModel):
             raise ValueError('load_path {} is empty and load_epoch {} is 0'.format(
                 self._opt.load_path, self._opt.load_epoch))
         net.eval()
-        self._load_params(net, self._opt.load_path, remove_bg_model=True)
 
         return net
 
