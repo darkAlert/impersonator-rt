@@ -82,7 +82,7 @@ class BaseOptions(object):
             if 'n_threads_train' in self._opt.__dict__:
                 self._opt.__setattr__('n_threads_train', 0)
 
-    def parse(self, params=None, set_cuda_env=True):
+    def parse(self, params=None, set_cuda_env=True, verbose=True):
         if not self._initialized:
             self.initialize()
         self._opt, unknown = self._parser.parse_known_args()
@@ -106,7 +106,8 @@ class BaseOptions(object):
         args = vars(self._opt)
 
         # print in terminal args
-        self._print(args)
+        if verbose:
+            self._print(args)
 
         # save args to file
         self._save(args)
