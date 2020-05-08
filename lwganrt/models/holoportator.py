@@ -116,6 +116,24 @@ class Holoportator(BaseModel):
         if output_path:
             cv_utils.save_cv2_img(src_info['image'], output_path, image_size=self._opt.image_size)
 
+    @torch.no_grad()
+    def save_descriptor(self, src_path, src_smpl, output_dir, output_name):
+        import os
+
+        ori_img = cv_utils.read_cv2_img(src_path)
+        # resize image and convert the color space from [0, 255] to [-1, 1]
+        img = cv_utils.transform_img(ori_img, self._opt.image_size, transpose=True) * 2 - 1.0
+        img = torch.tensor(img, dtype=torch.float32).cpu().unsqueeze(0)
+        src_smpl = torch.tensor(src_smpl, dtype=torch.float32).cpu()
+
+        dst_path = os.path.join(output_dir, str(output_name) + '_img.png')
+        cv_utils.save_cv2_img(ori_img, dst_path, image_size=self._opt.image_size)
+
+        img_path = os.path.join(output_dir, str(output_name) + '_img')
+        smpl_path = os.path.join(output_dir, str(output_name) + '_smpl')
+        torch.save(img, img_path)
+        torch.save(src_smpl, smpl_path)
+
 
     @torch.no_grad()
     def inference_by_smpls(self, tgt_smpls, cam_strategy='smooth', output_dir=None):

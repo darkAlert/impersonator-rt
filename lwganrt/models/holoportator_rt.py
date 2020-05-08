@@ -99,7 +99,7 @@ class HoloportatorRT(BaseModel):
 
         self.src_info = src_info
 
-
+    @torch.no_grad()
     def view(self, rt, t, output_dir=None):
         # get source info
         src_info = self.src_info
@@ -123,6 +123,21 @@ class HoloportatorRT(BaseModel):
 
         return preds
 
+    @torch.no_grad()
+    def inference(self, tgt_smpl, cam_strategy='smooth', output_dir=None):
+        # get target info
+        self.src_info['cam'] = tgt_smpl[:, 0:3].contiguous()
+
+        tsf_inputs = self.transfer_params_by_smpl(tgt_smpl, cam_strategy)
+        preds,_ = self.forward(tsf_inputs, self.tsf_info['T'])
+
+        preds = preds[0].permute(1, 2, 0)
+        preds = preds.cpu().detach().numpy()
+
+        if output_dir is not None:
+            cv_utils.save_cv2_img(preds, output_dir, normalize=True)
+
+        return preds
 
     def forward(self, tsf_inputs, T):
         src_encoder_outs, src_resnet_outs = self.src_info['feats']
@@ -132,7 +147,6 @@ class HoloportatorRT(BaseModel):
 
         return pred_imgs, tsf_mask
 
-
     def rotate_trans(self, rt, t, X):
         R = cv_utils.euler2matrix(rt)    # (3 x 3)
 
@@ -141,6 +155,57 @@ class HoloportatorRT(BaseModel):
 
         # (bs, Nv, 3) + (bs, 1, 3)
         return torch.bmm(X, R) + t
+
+    def transfer_params_by_smpl(self, tgt_smpl, cam_strategy='smooth', t=0):
+        # get source info
+        src_info = self.src_info
+
+        if t == 0 and cam_strategy == 'smooth':
+            self.first_cam = tgt_smpl[:, 0:3].clone()
+
+        # get transfer smpl
+        tsf_smpl = self.swap_smpl(src_info['cam'], src_info['shape'], tgt_smpl, cam_strategy=cam_strategy)
+        # transfer process, {'theta', 'cam', 'pose', 'shape', 'verts', 'j2d', 'j3d'}
+        tsf_info = self.hmr.get_details(tsf_smpl)
+
+        tsf_f2verts, tsf_fim, tsf_wim = self.render.render_fim_wim(tsf_info['cam'], tsf_info['verts'])
+        # src_f2pts = src_f2verts[:, :, :, 0:2]
+        tsf_info['fim'] = tsf_fim
+        tsf_info['wim'] = tsf_wim
+        tsf_info['cond'], _ = self.render.encode_fim(tsf_info['cam'], tsf_info['verts'], fim=tsf_fim, transpose=True)
+        # tsf_info['sil'] = util.morph((tsf_fim != -1).float(), ks=self._opt.ft_ks, mode='dilate')
+
+        T = self.render.cal_bc_transform(src_info['p2verts'], tsf_fim, tsf_wim)
+        tsf_img = F.grid_sample(src_info['img'], T)
+        tsf_inputs = torch.cat([tsf_img, tsf_info['cond']], dim=1)
+
+        # add target image to tsf info
+        tsf_info['tsf_img'] = tsf_img
+        tsf_info['T'] = T
+
+        self.tsf_info = tsf_info
+
+        return tsf_inputs
+
+    def swap_smpl(self, src_cam, src_shape, tgt_smpl, cam_strategy='smooth'):
+        tgt_cam = tgt_smpl[:, 0:3].contiguous()
+        pose = tgt_smpl[:, 3:75].contiguous()
+
+        # TODO, need more tricky ways
+        if cam_strategy == 'smooth':
+
+            cam = src_cam.clone()
+            delta_xy = tgt_cam[:, 1:] - self.first_cam[:, 1:]
+            cam[:, 1:] += delta_xy
+
+        elif cam_strategy == 'source':
+            cam = src_cam
+        else:
+            cam = tgt_cam
+
+        tsf_smpl = torch.cat([cam, pose, src_shape], dim=1)
+
+        return tsf_smpl
 
 
 def prepare_input(img, smpl, image_size=256, device=None):

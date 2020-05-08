@@ -144,7 +144,7 @@ def holoport_view(test_opt, steps):
     print ('All done!')
 
 
-def holoport_view_seq(test_opt, steps):
+def holoport_view_seq(test_opt, steps, save_descriptor=False):
     # Load and prepare test data:
     smpls_dir = os.path.join(test_opt.root_dir, test_opt.smpl_dir, test_opt.scene_path)
     frames_dir = os.path.join(test_opt.root_dir, test_opt.frames_dir, test_opt.scene_path)
@@ -180,6 +180,8 @@ def holoport_view_seq(test_opt, steps):
         img_path = test_data['frame_paths'][test_opt.src_cam][idx]
         smpl = test_data['smpls'][test_opt.src_cam][idx].unsqueeze(0)
         holoport.personalize(src_path=img_path, src_smpl=smpl, output_path=None)
+        if save_descriptor:
+            holoport.save_descriptor(src_path=img_path, src_smpl=smpl, output_dir=output_dir, output_name=idx)
 
         # Inference:
         params['R'][0] = 0
@@ -207,7 +209,8 @@ if __name__ == "__main__":
     test_opt.frames_dir = 'avatars'
     test_opt.smpl_dir = 'smpls_by_vibe_aligned_lwgan'
 
-    test_opt.scene_path = 'person_2/light-100_temp-5600/garments_2/front_position'
+    # test_opt.scene_path = 'person_2/light-100_temp-5600/garments_2/front_position'
+    test_opt.scene_path = 'person_6/light-100_temp-5600/garments_2/rotation'
     test_opt.output_dir = 'test/holoport_view/view_p2-l100-g2-front_h3e20'
     test_opt.src_cam = 'cam1'
     test_opt.frames_range = (0,-1)
@@ -244,5 +247,5 @@ if __name__ == "__main__":
     test_opt.view_params = 'R=0,90,0/t=0,0,0'
 
     # holoport_view(test_opt, steps=120)
-    holoport_view_seq(test_opt, steps=120)
+    holoport_view_seq(test_opt, steps=1, save_descriptor=True)
 
