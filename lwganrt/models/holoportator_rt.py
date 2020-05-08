@@ -89,7 +89,7 @@ class HoloportatorRT(BaseModel):
 
         # get front mask:
         if self.detector is not None:
-            bbox, ft_mask = self.detector.inference(src_img)
+            bbox, ft_mask = self.detector.inference(src_img[0])
         else:
             ft_mask = 1 - util.morph(src_info['cond'][:, -1:, :, :], ks=self._opt.ft_ks, mode='erode')
 
