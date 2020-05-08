@@ -35,7 +35,7 @@ class Holoportator(BaseModel):
                                    has_front=self._opt.front_warp, fill_back=False).cuda()
         # 4. pre-processor
         if self._opt.has_detector:
-            self.detector = PersonMaskRCNNDetector(ks=self._opt.bg_ks, threshold=0.5, to_gpu=True)
+            self.detector = PersonMaskRCNNDetector(ks=self._opt.bg_ks, threshold=0.5)
         else:
             self.detector = None
 

@@ -202,26 +202,26 @@ if __name__ == "__main__":
     # Parse options:
     test_opt = TestOptions().parse()
 
-    # # Data (Holo):
-    # test_opt.root_dir = '/home/darkalert/KazendiJob/Data/HoloVideo/Data'
-    # test_opt.frames_dir = 'avatars'
-    # test_opt.smpl_dir = 'smpls_by_vibe_aligned_lwgan'
-    #
-    # test_opt.scene_path = 'person_2/light-100_temp-5600/garments_2/front_position'
-    # test_opt.output_dir = 'test/holoport_view/view_p2-l100-g2-front_h3e20'
-    # test_opt.src_cam = 'cam1'
-    # test_opt.frames_range = (0,-1)
-
-    # Data (iPER):
-    test_opt.root_dir = '/home/darkalert/KazendiJob/Data/iPER/Data'
-    # test_opt.frames_dir = 'iPER_1024_images'
+    # Data (Holo):
+    test_opt.root_dir = '/home/darkalert/KazendiJob/Data/HoloVideo/Data'
     test_opt.frames_dir = 'avatars'
-    test_opt.smpl_dir = 'smpls_by_vibe_lwgan'
+    test_opt.smpl_dir = 'smpls_by_vibe_aligned_lwgan'
 
-    test_opt.scene_path = '001/1'
-    test_opt.output_dir = 'test/holoport_view/view_001-1_imper'
-    test_opt.src_cam = '2'
+    test_opt.scene_path = 'person_2/light-100_temp-5600/garments_2/front_position'
+    test_opt.output_dir = 'test/holoport_view/view_p2-l100-g2-front_h3e20'
+    test_opt.src_cam = 'cam1'
     test_opt.frames_range = (0,-1)
+
+    # # Data (iPER):
+    # test_opt.root_dir = '/home/darkalert/KazendiJob/Data/iPER/Data'
+    # # test_opt.frames_dir = 'iPER_1024_images'
+    # test_opt.frames_dir = 'avatars'
+    # test_opt.smpl_dir = 'smpls_by_vibe_lwgan'
+    #
+    # test_opt.scene_path = '001/1'
+    # test_opt.output_dir = 'test/holoport_view/view_001-1_imper'
+    # test_opt.src_cam = '2'
+    # test_opt.frames_range = (0,-1)
 
 
     # Model:
@@ -238,6 +238,7 @@ if __name__ == "__main__":
     test_opt.post_tune = False
     test_opt.front_warp = False
     test_opt.save_res = True
+    # test_opt.has_detector = True
 
     # Novel view params:
     test_opt.view_params = 'R=0,90,0/t=0,0,0'

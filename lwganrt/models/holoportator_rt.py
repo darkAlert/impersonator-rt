@@ -40,6 +40,12 @@ class HoloportatorRT(BaseModel):
                                    head_info=self._opt.head_info,
                                    device = self.device)
 
+        # 4. pre-processor
+        if self._opt.has_detector:
+            self.detector = PersonMaskRCNNDetector(ks=self._opt.bg_ks, threshold=0.5)
+        else:
+            self.detector = None
+
     def _create_generator(self):
         net = NetworksFactory.get_by_name(self._opt.gen_name, src_dim=3+self._G_cond_nc,
                                           tsf_dim=3+self._G_cond_nc, repeat_num=self._opt.repeat_num,
@@ -80,7 +86,12 @@ class HoloportatorRT(BaseModel):
         # add image to source info
         src_info['img'] = src_img
 
-        ft_mask = 1 - util.morph(src_info['cond'][:, -1:, :, :], ks=self._opt.ft_ks, mode='erode')
+        # get front mask:
+        if self.detector is not None:
+            bbox, ft_mask = self.detector.inference(src_img)
+        else:
+            ft_mask = 1 - util.morph(src_info['cond'][:, -1:, :, :], ks=self._opt.ft_ks, mode='erode')
+
         src_inputs = torch.cat([src_img * ft_mask, src_info['cond']], dim=1)
 
         src_info['feats'] = self.generator.encode_src(src_inputs)

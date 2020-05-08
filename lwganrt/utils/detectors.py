@@ -1,7 +1,7 @@
 import torch
 import torchvision
 
-from utils.util import morph
+from lwganrt.utils.util import morph
 
 
 class PersonMaskRCNNDetector(object):
@@ -22,7 +22,7 @@ class PersonMaskRCNNDetector(object):
 
     PERSON_IDS = 1
 
-    def __init__(self, ks=3, threshold=0.5, to_gpu=True):
+    def __init__(self, ks=3, threshold=0.5, device=None):
         super(PersonMaskRCNNDetector, self).__init__()
 
         self.model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
@@ -32,9 +32,12 @@ class PersonMaskRCNNDetector(object):
         self.ks = ks
         self.kernel = torch.ones(1, 1, ks, ks, dtype=torch.float32)
 
-        if to_gpu:
+        if device is None:
             self.model = self.model.cuda()
             self.kernel = self.kernel.cuda()
+        else:
+            self.model = self.model.to(device)
+            self.kernel = self.kernel.to(device)
 
     def forward(self, images):
         predictions = self.model(images)
