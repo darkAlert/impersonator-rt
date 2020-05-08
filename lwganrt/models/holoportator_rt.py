@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 from .models import BaseModel
 from lwganrt.networks.networks import NetworksFactory, HumanModelRecovery
+from lwganrt.utils.detectors import PersonMaskRCNNDetector
 from lwganrt.utils.nmr import SMPLRenderer
 import lwganrt.utils.cv_utils as cv_utils
 import lwganrt.utils.util as util
@@ -42,7 +43,7 @@ class HoloportatorRT(BaseModel):
 
         # 4. pre-processor
         if self._opt.has_detector:
-            self.detector = PersonMaskRCNNDetector(ks=self._opt.bg_ks, threshold=0.5)
+            self.detector = PersonMaskRCNNDetector(ks=self._opt.bg_ks, threshold=0.5, device=self.device)
         else:
             self.detector = None
 
