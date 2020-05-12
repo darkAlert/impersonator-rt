@@ -131,7 +131,7 @@ class HoloportatorRT(BaseModel):
         tsf_inputs = self.transfer_params_by_smpl(tgt_smpl, cam_strategy)
         preds,_ = self.forward(tsf_inputs, self.tsf_info['T'])
 
-        preds = preds[0].permute(1, 2, 0)
+        preds = preds.permute(0, 2, 3, 1)
         preds = preds.cpu().detach().numpy()
 
         if output_dir is not None:
