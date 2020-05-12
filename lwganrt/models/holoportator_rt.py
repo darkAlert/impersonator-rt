@@ -99,6 +99,7 @@ class HoloportatorRT(BaseModel):
 
         self.src_info = src_info
 
+
     @torch.no_grad()
     def view(self, rt, t, output_dir=None):
         # get source info
