@@ -7,9 +7,9 @@ import os
 import glob
 
 
-from utils.util import load_pickle_file, morph
-import utils.cv_utils as cv_utils
-import utils.mesh as mesh
+from lwganrt.utils.util import load_pickle_file, morph
+import lwganrt.utils.cv_utils as cv_utils
+import lwganrt.utils.mesh as mesh
 
 
 class DatasetFactory(object):
