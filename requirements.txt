@@ -3,4 +3,5 @@ scipy
 h5py
 numpy
 ipdb
+matplotlib
 
