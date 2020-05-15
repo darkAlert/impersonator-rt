@@ -22,10 +22,15 @@ class PersonMaskRCNNDetector(object):
 
     PERSON_IDS = 1
 
-    def __init__(self, ks=3, threshold=0.5, device=None):
+    def __init__(self, ks=3, threshold=0.5, device=None, pretrained_path=None):
         super(PersonMaskRCNNDetector, self).__init__()
 
-        self.model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
+        pretrained = True if pretrained_path is None else False
+        self.model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=pretrained)
+
+        if pretrained_path is not None:
+            self.model.load_state_dict(torch.load(pretrained_path))
+
         self.model.eval()
 
         self.threshold = threshold

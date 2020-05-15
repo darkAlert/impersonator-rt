@@ -187,9 +187,9 @@ def make_dataset(opt):
     return data_loader
 
 @torch.no_grad()
-def detect_and_apply_mask(src_img, device):
+def detect_and_apply_mask(model_path, src_img, device):
     # Detect mask:
-    detector = PersonMaskRCNNDetector(ks=3, threshold=0.5, device=device)
+    detector = PersonMaskRCNNDetector(ks=1, threshold=0.5, device=device, pretrained_path=model_path)
     _, ft_mask = detector.inference(src_img[0])
 
     # Apply mask:
@@ -203,7 +203,7 @@ def adaptive_personalize(opt, model, src_img, src_smpl):
     clear_dir(opt.output_dir)
 
     # Detect mask:
-    src_img = detect_and_apply_mask(src_img, model.device)
+    src_img = detect_and_apply_mask(opt.maskrcnn_path, src_img, model.device)
 
     # Save src image:
     img = src_img.permute(0, 2, 3, 1)[0].cpu().detach().numpy()
