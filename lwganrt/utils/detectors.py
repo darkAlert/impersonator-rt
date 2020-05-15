@@ -26,7 +26,7 @@ class PersonMaskRCNNDetector(object):
         super(PersonMaskRCNNDetector, self).__init__()
 
         pretrained = True if pretrained_path is None else False
-        self.model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=pretrained)
+        self.model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=pretrained, pretrained_backbone=pretrained)
 
         if pretrained_path is not None:
             self.model.load_state_dict(torch.load(pretrained_path))
