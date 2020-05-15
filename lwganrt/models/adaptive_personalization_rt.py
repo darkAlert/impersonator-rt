@@ -1,9 +1,16 @@
+import os
+import glob
 import torch
+import numpy as np
+from tqdm import tqdm
 from lwganrt.data.dataset import PairSampleDataset
+from lwganrt.utils.util import load_pickle_file, write_pickle_file, mkdirs, mkdir, clear_dir
+import lwganrt.utils.cv_utils as cv_utils
+from lwganrt.utils.detectors import PersonMaskRCNNDetector
 
 
 @torch.no_grad()
-def write_pair_info(src_info, tsf_info, out_file, model, only_vis):
+def write_pair_info(src_info, tsf_info, out_file, model):
     """
     Args:
         src_info:
@@ -42,28 +49,38 @@ def scan_tgt_paths(tgt_path, itv=20):
 
     return all_tgt_paths
 
+def load_smpls(smpl_path, itv=20):
+    smpl_data = load_pickle_file(smpl_path)
+    pose = smpl_data['pose']
+    shape = smpl_data['shape']
+    cams = smpl_data['cams']
+    smpls = []
+    for i in range(0,len(pose),itv):
+        vec = np.concatenate((cams[i], pose[i], shape[i]), axis=0)
+        smpls.append(torch.tensor(vec, dtype=torch.float32).unsqueeze(0))
 
-def meta_imitate(opt, model, prior_tgt_path, save_imgs=True):
+    return smpls
+
+def meta_imitate(opt, model, save_imgs=True):
     src_path = opt.src_path
-
-    all_tgt_paths = scan_tgt_paths(prior_tgt_path, itv=40)
     output_dir = opt.output_dir
 
-    out_img_dir, out_pair_dir = mkdirs([os.path.join(output_dir, 'imgs'), os.path.join(output_dir, 'pairs')])
+    all_tgt_smpls = load_smpls(opt.pri_smpl_path, itv=40)
 
+    out_img_dir, out_pair_dir = mkdirs([os.path.join(output_dir, 'imgs'), os.path.join(output_dir, 'pairs')])
     img_pair_list = []
 
-    for t in tqdm(range(len(all_tgt_paths))):
-        tgt_path = all_tgt_paths[t]
-        preds = model.inference([tgt_path], cam_strategy=opt.cam_strategy, verbose=False)
+    for t in tqdm(range(len(all_tgt_smpls))):
+        tgt_path = opt.pri_path
+        tgt_smpl = all_tgt_smpls[t].to(model.device)
+        preds = model.inference(tgt_smpl, cam_strategy=opt.cam_strategy)
 
         if save_imgs:
             tgt_name = os.path.split(tgt_path)[-1]
             out_path = os.path.join(out_img_dir, 'pred_' + tgt_name)
             cv_utils.save_cv2_img(preds[0], out_path, normalize=True)
             write_pair_info(model.src_info, model.tsf_info,
-                            os.path.join(out_pair_dir, '{:0>8}.pkl'.format(t)), model=model,
-                            only_vis=opt.only_vis)
+                            os.path.join(out_pair_dir, '{:0>8}.pkl'.format(t)), model=model)
 
             img_pair_list.append((src_path, tgt_path))
 
@@ -169,11 +186,32 @@ def make_dataset(opt):
 
     return data_loader
 
+@torch.no_grad()
+def detect_and_apply_mask(src_img, device):
+    # Detect mask:
+    detector = PersonMaskRCNNDetector(ks=3, threshold=0.5, device=device)
+    _, ft_mask = detector.inference(src_img[0])
 
-def adaptive_personalize(opt, model, src_imgs, src_smpls):
+    # Apply mask:
+    src_img = (src_img + 1) / 2.0 * ft_mask
+    src_img = src_img * 2 - 1.0
+
+    return src_img
+
+
+def adaptive_personalize(opt, model, src_img, src_smpl):
+    clear_dir(opt.output_dir)
+
+    # Detect mask:
+    src_img = detect_and_apply_mask(src_img, model.device)
+
+    # Save src image:
+    img = src_img.permute(0, 2, 3, 1)[0].cpu().detach().numpy()
+    cv_utils.save_cv2_img(img, opt.src_path, normalize=True)
+
     print('\n\t\t\tPersonalization: meta imitation...')
-    model.personalize(src_imgs, src_smpls)
-    meta_imitate(opt, model, prior_tgt_path=opt.pri_path, save_imgs=True)
+    model.personalize(src_img, src_smpl)
+    meta_imitate(opt, model, save_imgs=True)
 
     # post tune
     print('\n\t\t\tPersonalization: meta cycle finetune...')

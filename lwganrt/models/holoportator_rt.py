@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
+from tqdm import tqdm
 from .models import BaseModel
 from lwganrt.networks.networks import NetworksFactory, HumanModelRecovery
 from lwganrt.utils.detectors import PersonMaskRCNNDetector
@@ -216,7 +217,7 @@ class HoloportatorRT(BaseModel):
 
 
     def post_personalize(self, data_loader, verbose=True):
-        from networks.networks import FaceLoss
+        from lwganrt.networks.networks import FaceLoss
 
         @torch.no_grad()
         def set_gen_inputs(sample):
@@ -247,12 +248,12 @@ class HoloportatorRT(BaseModel):
 
             return cycle_src_inputs, cycle_tsf_inputs
 
-        def inference(src_inputs, tsf_inputs, T, T_cycle, src_fim, tsf_fim):
+        def inference(src_inputs, tsf_inputs, T, T_cycle):
             fake_src_color, fake_src_mask, fake_tsf_color, fake_tsf_mask = \
                 self.generator.infer_front(src_inputs, tsf_inputs, T=T)
 
-            fake_src_imgs = fake_src_mask + (1 - fake_src_mask) * fake_src_color
-            fake_tsf_imgs = fake_tsf_mask + (1 - fake_tsf_mask) * fake_tsf_color
+            fake_src_imgs = (1 - fake_src_mask) * fake_src_color
+            fake_tsf_imgs = (1 - fake_tsf_mask) * fake_tsf_color
 
             cycle_src_inputs, cycle_tsf_inputs = set_cycle_inputs(
                 fake_tsf_imgs, src_inputs, tsf_inputs, T_cycle)
@@ -260,8 +261,8 @@ class HoloportatorRT(BaseModel):
             cycle_src_color, cycle_src_mask, cycle_tsf_color, cycle_tsf_mask = \
                 self.generator.infer_front(cycle_src_inputs, cycle_tsf_inputs, T=T_cycle)
 
-            cycle_src_imgs = cycle_src_mask + (1 - cycle_src_mask) * cycle_src_color
-            cycle_tsf_imgs = cycle_tsf_mask + (1 - cycle_tsf_mask) * cycle_tsf_color
+            cycle_src_imgs = (1 - cycle_src_mask) * cycle_src_color
+            cycle_tsf_imgs = (1 - cycle_tsf_mask) * cycle_tsf_color
 
             return fake_src_imgs, fake_tsf_imgs, cycle_src_imgs, cycle_tsf_imgs, fake_src_mask, fake_tsf_mask
 
@@ -288,7 +289,7 @@ class HoloportatorRT(BaseModel):
                 bs = tsf_inputs.shape[0]
                 src_imgs = images[0:bs]
                 fake_src_imgs, fake_tsf_imgs, cycle_src_imgs, cycle_tsf_imgs, fake_src_mask, fake_tsf_mask = inference(
-                    src_inputs, tsf_inputs, T, T_cycle, src_fim, tsf_fim)
+                    src_inputs, tsf_inputs, T, T_cycle)
 
                 # cycle reconstruction loss
                 cycle_loss = idt_cri(src_imgs, fake_src_imgs) + idt_cri(src_imgs, cycle_tsf_imgs)
@@ -307,9 +308,10 @@ class HoloportatorRT(BaseModel):
 
                 # mask loss
                 # mask_loss = msk_cri(fake_tsf_mask, tsf_inputs[:, -1:]) + msk_cri(fake_src_mask, src_inputs[:, -1:])
-                mask_loss = msk_cri(torch.cat([fake_src_mask, fake_tsf_mask], dim=0), pseudo_masks)
+                # mask_loss = msk_cri(torch.cat([fake_src_mask, fake_tsf_mask], dim=0), pseudo_masks)
 
-                loss = 10 * cycle_loss + 10 * struct_loss + fid_loss + 5 * mask_loss
+                # loss = 10 * cycle_loss + 10 * struct_loss + fid_loss + 5 * mask_loss
+                loss = 10 * cycle_loss + 10 * struct_loss + fid_loss
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -320,7 +322,7 @@ class HoloportatorRT(BaseModel):
                             f'epoch: {epoch + 1}; step: {step}; '
                             f'total: {loss.item():.6f}; cyc: {cycle_loss.item():.6f}; '
                             f'str: {struct_loss.item():.6f}; fid: {fid_loss.item():.6f}; '
-                            f'msk: {mask_loss.item():.6f}'
+                            # f'msk: {mask_loss.item():.6f}'
                         )
                     )
 
