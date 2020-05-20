@@ -2,10 +2,10 @@ import os
 import torch
 import torch.nn.functional as F
 from collections import OrderedDict
-import utils.util as util
+import lwganrt.utils.util as util
 from .models import BaseModel
-from networks.networks import NetworksFactory, HumanModelRecovery, Vgg19, VGGLoss, FaceLoss, StyleLoss
-from utils.nmr import SMPLRenderer
+from lwganrt.networks.networks import NetworksFactory, HumanModelRecovery, Vgg19, VGGLoss, FaceLoss, StyleLoss
+from lwganrt.utils.nmr import SMPLRenderer
 import ipdb
 
 
@@ -356,11 +356,10 @@ class Holoportator(BaseModel):
         if self._opt.use_vgg:
             self._loss_g_tsf = torch.mean(self._crt_tsf(fake_tsf_imgs, self._real_tsf)) * self._opt.lambda_tsf
         else:
-            self._loss_g_tsf = torch.mean(self._crt_tsf(fake_tsf_imgs, self._real_tsf)) * self._opt.lambda_tsf
+            raise NotImplementedError
 
         if self._opt.use_style:
-            self._loss_g_style = torch.mean(self._crt_style(
-                fake_tsf_imgs, self._real_tsf)) * self._opt.lambda_style
+            self._loss_g_style = torch.mean(self._crt_style(fake_tsf_imgs, self._real_tsf)) * self._opt.lambda_style
 
         if self._opt.use_face:
             self._loss_g_face = torch.mean(self._criterion_face(
