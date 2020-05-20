@@ -1,51 +1,36 @@
+import torch
 from .models import BaseModel
 from lwganrt.utils.detectors import PersonMaskRCNNDetector
 
 
-class SegmentatorRT(BaseModel):
-    def __init__(self, opt, device):
-        super(SegmentatorRT, self).__init__(opt)
+class SegmentatorRT():
+    def __init__(self, opt, device=None):
         self._name = 'SegmentatorRT'
-        self.device = device
+        if device is not None:
+            self.device = device
+        else:
+            assert torch.cuda.is_available()
+            self.device = torch.device('cuda:' + str(opt['gpu_id']))
 
         self.detector = PersonMaskRCNNDetector(ks=opt['ks'], threshold=0.5, device=self.device,
                                                pretrained_path=opt['maskrcnn_path'])
 
+
     @torch.no_grad()
-    def inference(self, src_img):
-        _, ft_mask = detector.inference(src_img)
+    def inference(self, src_img, apply_mask=False):
+        src_img = src_img.to(self.device)
 
-        return ft_mask
+        _, ft_mask = self.detector.inference(src_img[0])
 
-
-def prepare_input(img, smpl, image_size=256, device=None):
-    # resize image and convert the color space from [0, 255] to [-1, 1]
-    if isinstance(img, np.ndarray):
-        prep_img = cv_utils.transform_img(img, image_size, transpose=True) * 2 - 1.0
-        prep_img = torch.tensor(prep_img, dtype=torch.float32).unsqueeze(0)
-    else:
-        raise NotImplementedError
-
-    if isinstance(smpl, np.ndarray):
-        if smpl.ndim == 1:
-            prep_smpl = torch.tensor(smpl, dtype=torch.float32).unsqueeze(0)
+        if apply_mask:
+            masked_img = (src_img + 1) / 2.0 * ft_mask
+            masked_img = masked_img * 2 - 1.0
+            masked_img = masked_img.permute(0, 2, 3, 1)[0].cpu().detach().numpy()
         else:
-            prep_smpl = torch.tensor(smpl, dtype=torch.float32)
-    else:
-        raise NotImplementedError
+            masked_img = None
 
-    if device is not None:
-        prep_img = prep_img.to(device)
-        prep_smpl = prep_smpl.to(device)
+        ft_mask = ft_mask.permute(0, 2, 3, 1)[0].cpu().detach().numpy()
 
-    return prep_img, prep_smpl
-
-
-def apply_mask(img, mask):
-    masked_img = (img + 1) / 2.0 * mask
-    masked_img = masked_img * 2 - 1.0
-
-    return masked_img
-
+        return ft_mask, masked_img
 
 
