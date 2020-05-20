@@ -1,8 +1,8 @@
 import time
-from options.train_options import TrainOptions
-from data.custom_dataset_data_loader import CustomDatasetDataLoader
-from models.models import ModelsFactory
-from utils.tb_visualizer import TBVisualizer
+from lwganrt.options.train_options import TrainOptions
+from lwganrt.data.custom_dataset_data_loader import CustomDatasetDataLoader
+from lwganrt.models.models import ModelsFactory
+from lwganrt.utils.tb_visualizer import TBVisualizer
 from collections import OrderedDict
 
 
