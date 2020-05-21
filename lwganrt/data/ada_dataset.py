@@ -65,7 +65,7 @@ class AdaBaseDataset(DatasetBase):
             'length': len(images_path)
         }]
 
-        self._dataset_size += info['length'] // self._intervals
+        self._dataset_size += vids_info[0]['length'] // self._intervals
         self._num_videos += 1
 
         return vids_info
@@ -106,11 +106,11 @@ class AdaDataset(AdaBaseDataset):
 
             smpl_path = smpls_path[t]
             smpl = load_pickle_file(smpl_path)
-            smpls.append()
+            smpls.append(smpl)
         smpls = np.concatenate(smpls, axis=0)
 
-        print ('smpls:', smpls.shape)
-
         return images, smpls
+
+
 
 
