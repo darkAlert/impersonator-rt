@@ -11,16 +11,17 @@ import ipdb
 
 class BodyRecoveryFlowH(torch.nn.Module):
 
-    def __init__(self, opt):
+    def __init__(self, opt, device=None):
         super(BodyRecoveryFlowH, self).__init__()
         self._name = 'BodyRecoveryFlowH'
         self._opt = opt
+        self.device = device
 
         # create networks
         self._init_create_networks()
 
     def _create_hmr(self):
-        hmr = HumanModelRecovery(smpl_pkl_path=self._opt.smpl_model)
+        hmr = HumanModelRecovery(smpl_pkl_path=self._opt.smpl_model, device=self.device)
         saved_data = torch.load(self._opt.hmr_model)
         hmr.load_state_dict(saved_data)
         hmr.eval()
@@ -28,10 +29,18 @@ class BodyRecoveryFlowH(torch.nn.Module):
 
     def _create_render(self):
         render = SMPLRenderer(map_name=self._opt.map_name,
-                              uv_map_path=self._opt.uv_mapping,
-                              tex_size=self._opt.tex_size,
-                              image_size=self._opt.image_size, fill_back=False,
-                              anti_aliasing=True, background_color=(0, 0, 0), has_front=False)
+                               face_path=self._opt.smpl_faces,
+                               uv_map_path=self._opt.uv_mapping,
+                               image_size=self._opt.image_size,
+                               tex_size=self._opt.tex_size,
+                               has_front=False,
+                               fill_back=False,
+                               part_info=self._opt.part_info,
+                               front_info=self._opt.front_info,
+                               head_info=self._opt.head_info,
+                               anti_aliasing=True,
+                               background_color=(0, 0, 0),
+                               device=self.device)
 
         return render
 
@@ -158,6 +167,7 @@ class Holoportator(BaseModel):
     def __init__(self, opt):
         super(Holoportator, self).__init__(opt)
         self._name = 'Holoportator'
+        self.device = torch.device('cuda:' + str(opt.gpu_ids))
 
         # create networks
         self._init_create_networks()
@@ -182,7 +192,7 @@ class Holoportator(BaseModel):
         multi_gpus = len(self._gpu_ids) > 1
 
         # body recovery Flow
-        self._bdr = BodyRecoveryFlowH(opt=self._opt)
+        self._bdr = BodyRecoveryFlowH(opt=self._opt, device=self.device)
         if multi_gpus:
             self._bdr = torch.nn.DataParallel(self._bdr)
 
@@ -205,7 +215,8 @@ class Holoportator(BaseModel):
 
     def _create_generator(self):
         return NetworksFactory.get_by_name(self._opt.gen_name, src_dim=3+self._G_cond_nc,
-                                           tsf_dim=3+self._G_cond_nc, repeat_num=self._opt.repeat_num)
+                                           tsf_dim=3+self._G_cond_nc, repeat_num=self._opt.repeat_num,
+                                           device=self.device)
 
     def _create_discriminator(self):
         return NetworksFactory.get_by_name('discriminator_patch_gan', input_nc=3 + self._D_cond_nc,
@@ -445,14 +456,15 @@ class Holoportator(BaseModel):
         self._vis_batch_real = util.tensor2im(self._real_tsf, idx=-1)
         self._vis_batch_fake = util.tensor2im(fake_tsf_imgs, idx=-1)
 
-    def save(self, label):
+    def save(self, label, save_optimizer=True):
         # save networks
         self._save_network(self._G, 'G', label)
         self._save_network(self._D, 'D', label)
 
         # save optimizers
-        self._save_optimizer(self._optimizer_G, 'G', label)
-        self._save_optimizer(self._optimizer_D, 'D', label)
+        if save_optimizer:
+            self._save_optimizer(self._optimizer_G, 'G', label)
+            self._save_optimizer(self._optimizer_D, 'D', label)
 
     def load(self):
         load_epoch = self._opt.load_epoch
