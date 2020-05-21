@@ -42,6 +42,11 @@ class DatasetFactory(object):
             from lwganrt.data.holo_imper_dataset import HoloImPerDataset
             dataset = HoloImPerDataset(opt, is_for_train)
 
+        elif dataset_name == 'Ada':
+            # dataset for adaptive training in real-time
+            from lwganrt.data.ada_dataset import AdaDataset
+            dataset = AdaDataset(opt, is_for_train)
+
         else:
             raise ValueError("Dataset [%s] not recognized." % dataset_name)
 
