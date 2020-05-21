@@ -53,5 +53,6 @@ class TrainOptions(BaseOptions):
         self._parser.add_argument('--lambda_face', type=float, default=1, help='lambda face loss')
         self._parser.add_argument('--lambda_mask', type=float, default=0.1, help='lambda mask loss')
         self._parser.add_argument('--lambda_mask_smooth', type=float, default=1e-5, help='lambda mask smooth loss')
+        self._parser.add_argument('--train_D', action='store_true', help='Train D or not')
 
         self.is_train = True
