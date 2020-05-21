@@ -5,7 +5,7 @@
 gpu_ids=0
 
 # dataset configs
-dataset_model=Holo  # use iPER dataset
+dataset_mode=Holo  # use iPER dataset
 data_dir=/home/darkalert/KazendiJob/Data/HoloVideo/Data  # need to be replaced!!!!!
 images_folder=avatars
 smpls_folder=smpl_aligned_lwgan
@@ -45,7 +45,7 @@ python3 train.py --gpu_ids ${gpu_ids}        \
     --model            ${model}             \
     --gen_name         ${gen_name}          \
     --name             ${name}              \
-    --dataset_mode     ${dataset_model}     \
+    --dataset_mode     ${dataset_mode}     \
     --image_size       ${image_size}        \
     --batch_size       ${batch_size}        \
     --lambda_face      ${lambda_face}       \

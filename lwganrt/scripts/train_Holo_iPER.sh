@@ -6,7 +6,7 @@
 gpu_ids=0
 
 # dataset configs
-dataset_model=Holo_iPER
+dataset_mode=Holo_iPER
 
 # Holo dataset
 holo_data_dir=/home/kazendi/Anton/Data/HoloVideo/Data  # need to be replaced!!!!!
@@ -68,7 +68,7 @@ python3 train.py --gpu_ids ${gpu_ids}        \
     --model            ${model}             \
     --gen_name         ${gen_name}          \
     --name             ${name}              \
-    --dataset_mode     ${dataset_model}     \
+    --dataset_mode     ${dataset_mode}     \
     --image_size       ${image_size}        \
     --batch_size       ${batch_size}        \
     --lambda_face      ${lambda_face}       \
