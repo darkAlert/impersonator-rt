@@ -118,7 +118,7 @@ class HoloportatorRT(BaseModel):
 
         preds, tsf_mask = self.forward(tsf_inputs, T)
 
-        preds = preds[0].permute(1, 2, 0)
+        preds = preds.permute(0, 2, 3, 1)
         preds = preds.cpu().detach().numpy()
 
         if output_dir is not None:
