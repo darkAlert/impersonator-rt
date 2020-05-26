@@ -67,7 +67,7 @@ class BodyRecoveryFlowH(torch.nn.Module):
         syn_img = F.grid_sample(src_img, T)
 
         # src input
-        input_G_src = torch.cat([src_img * (1 - src_crop_mask), src_cond], dim=1)
+        input_G_src = torch.cat([src_img * (1 - src_crop_mask), src_cond], dim=1)  # DELETE src_crop_mask ???
 
         # tsf input
         input_G_tsf = torch.cat([syn_img, ref_cond], dim=1)
@@ -324,7 +324,7 @@ class Holoportator(BaseModel):
         self._G.eval()
         self._is_train = False
 
-    def forward(self, keep_data_for_visuals=False, return_estimates=False):
+    def forward(self, keep_data_for_visuals=False):
         # generate fake images
         fake_src_color, fake_src_mask, fake_tsf_color, fake_tsf_mask = \
             self._G.forward(self._input_G_src, self._input_G_tsf, T=self._T)

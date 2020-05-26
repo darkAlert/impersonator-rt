@@ -210,7 +210,7 @@ if __name__ == "__main__":
     test_opt.smpl_dir = 'smpls_by_vibe_aligned_lwgan'
 
     # test_opt.scene_path = 'person_2/light-100_temp-5600/garments_2/front_position'
-    test_opt.scene_path = 'person_6/light-100_temp-5600/garments_2/rotation'
+    test_opt.scene_path = 'person_9/light-100_temp-5600/garments_1/freestyle'
     test_opt.output_dir = 'test/holoport_view/view_p2-l100-g2-front_h3e20'
     test_opt.src_cam = 'cam1'
     test_opt.frames_range = (0,-1)
@@ -244,8 +244,8 @@ if __name__ == "__main__":
     # test_opt.has_detector = True
 
     # Novel view params:
-    test_opt.view_params = 'R=0,90,0/t=0,0,0'
+    test_opt.view_params = 'R=0,0,0/t=0,0,0'
 
-    # holoport_view(test_opt, steps=120)
-    holoport_view_seq(test_opt, steps=1, save_descriptor=True)
+    # holoport_view(test_opt, steps=1)
+    holoport_view_seq(test_opt, steps=1, save_descriptor=False)
 
