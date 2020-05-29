@@ -49,7 +49,7 @@ class BodyRecoveryFlowH(torch.nn.Module):
         self._hmr = self._create_hmr()
         self._render = self._create_render()
 
-    def forward(self, src_img, ref_img, src_smpl, ref_smpl):
+    def forward(self, src_img, ref_img, src_smpl, ref_smpl, use_mask=False):
         # get smpl information
         src_info = self._hmr.get_details(src_smpl)
         ref_info = self._hmr.get_details(ref_smpl)
@@ -67,7 +67,10 @@ class BodyRecoveryFlowH(torch.nn.Module):
         syn_img = F.grid_sample(src_img, T)
 
         # src input
-        input_G_src = torch.cat([src_img * (1 - src_crop_mask), src_cond], dim=1)  # DELETE src_crop_mask ???
+        if use_mask:
+            input_G_src = torch.cat([src_img * (1 - src_crop_mask), src_cond], dim=1)  # DELETE src_crop_mask ???
+        else:
+            input_G_src = torch.cat([src_img, src_cond], dim=1)
 
         # tsf input
         input_G_tsf = torch.cat([syn_img, ref_cond], dim=1)
@@ -324,13 +327,17 @@ class Holoportator(BaseModel):
         self._G.eval()
         self._is_train = False
 
-    def forward(self, keep_data_for_visuals=False):
+    def forward(self, keep_data_for_visuals=False, use_mask=False):
         # generate fake images
         fake_src_color, fake_src_mask, fake_tsf_color, fake_tsf_mask = \
             self._G.forward(self._input_G_src, self._input_G_tsf, T=self._T)
 
-        fake_src_imgs = (1 - fake_src_mask) * fake_src_color
-        fake_tsf_imgs = (1 - fake_tsf_mask) * fake_tsf_color
+        if use_mask:
+            fake_src_imgs = (1 - fake_src_mask) * fake_src_color
+            fake_tsf_imgs = (1 - fake_tsf_mask) * fake_tsf_color
+        else:
+            fake_src_imgs = fake_src_color
+            fake_tsf_imgs = fake_tsf_color
         fake_masks = torch.cat([fake_src_mask, fake_tsf_mask], dim=0)
 
         # keep data for visualization

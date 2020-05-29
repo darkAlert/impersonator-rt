@@ -75,7 +75,7 @@ class HoloportatorRT(BaseModel):
 
 
     @torch.no_grad()
-    def personalize(self, src_img, src_smpl):
+    def personalize(self, src_img, src_smpl, use_mask=False):
         # source process, {'theta', 'cam', 'pose', 'shape', 'verts', 'j2d', 'j3d'}
         src_info = self.hmr.get_details(src_smpl)
         src_f2verts, src_fim, src_wim = self.render.render_fim_wim(src_info['cam'], src_info['verts'])
@@ -89,13 +89,15 @@ class HoloportatorRT(BaseModel):
         # add image to source info
         src_info['img'] = src_img
 
-        # get front mask:
-        if self.detector is not None:
-            bbox, ft_mask = self.detector.inference(src_img[0])
+        if use_mask:
+            # get front mask:
+            if self.detector is not None:
+                bbox, ft_mask = self.detector.inference(src_img[0])
+            else:
+                ft_mask = 1 - util.morph(src_info['cond'][:, -1:, :, :], ks=self._opt.ft_ks, mode='erode')
+            src_inputs = torch.cat([src_img * ft_mask, src_info['cond']], dim=1)
         else:
-            ft_mask = 1 - util.morph(src_info['cond'][:, -1:, :, :], ks=self._opt.ft_ks, mode='erode')
-
-        src_inputs = torch.cat([src_img * ft_mask, src_info['cond']], dim=1)
+            src_inputs = torch.cat([src_img, src_info['cond']], dim=1)
 
         src_info['feats'] = self.generator.encode_src(src_inputs)
 
@@ -128,11 +130,11 @@ class HoloportatorRT(BaseModel):
 
 
     @torch.no_grad()
-    def inference(self, tgt_smpl, cam_strategy='smooth', output_dir=None):
+    def inference(self, tgt_smpl, cam_strategy='smooth', output_dir=None, view=None):
         # get target info
         self.src_info['cam'] = tgt_smpl[:, 0:3].contiguous()
 
-        tsf_inputs = self.transfer_params_by_smpl(tgt_smpl, cam_strategy)
+        tsf_inputs = self.transfer_params_by_smpl(tgt_smpl, cam_strategy, view=view)
         preds,_ = self.forward(tsf_inputs, self.tsf_info['T'])
 
         preds = preds.permute(0, 2, 3, 1)
@@ -144,11 +146,14 @@ class HoloportatorRT(BaseModel):
         return preds
 
 
-    def forward(self, tsf_inputs, T):
+    def forward(self, tsf_inputs, T, use_mask=False):
         src_encoder_outs, src_resnet_outs = self.src_info['feats']
 
         tsf_color, tsf_mask = self.generator.inference(src_encoder_outs, src_resnet_outs, tsf_inputs, T)
-        pred_imgs = (1 - tsf_mask) * tsf_color
+        if use_mask:
+            pred_imgs = (1 - tsf_mask) * tsf_color
+        else:
+            pred_imgs = tsf_color
 
         return pred_imgs, tsf_mask
 
@@ -163,7 +168,7 @@ class HoloportatorRT(BaseModel):
         return torch.bmm(X, R) + t
 
 
-    def transfer_params_by_smpl(self, tgt_smpl, cam_strategy='smooth', t=0):
+    def transfer_params_by_smpl(self, tgt_smpl, cam_strategy='smooth', t=0, view=None):
         # get source info
         src_info = self.src_info
 
@@ -174,6 +179,11 @@ class HoloportatorRT(BaseModel):
         tsf_smpl = self.swap_smpl(src_info['cam'], src_info['shape'], tgt_smpl, cam_strategy=cam_strategy)
         # transfer process, {'theta', 'cam', 'pose', 'shape', 'verts', 'j2d', 'j3d'}
         tsf_info = self.hmr.get_details(tsf_smpl)
+
+        # New view for tsf_smpl:
+        if view is not None:
+            tsf_mesh = tsf_info['verts']
+            tsf_info['verts'] = self.rotate_trans(view['R'], view['t'], tsf_mesh)
 
         tsf_f2verts, tsf_fim, tsf_wim = self.render.render_fim_wim(tsf_info['cam'], tsf_info['verts'])
         # src_f2pts = src_f2verts[:, :, :, 0:2]
