@@ -38,6 +38,10 @@ class NetworksFactory(object):
             from .generator import HoloportGenerator
             network = HoloportGenerator(*args, **kwargs)
 
+        elif network_name == 'holoportator_uv':
+            from .generator_uv import HoloportGeneratorUV
+            network = HoloportGeneratorUV(*args, **kwargs)
+
         else:
             raise ValueError("Network %s not recognized." % network_name)
 
