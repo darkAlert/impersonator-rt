@@ -22,7 +22,16 @@ class ResidualBlock(nn.Module):
 
 class ResUnetGeneratorUV(NetworkBase):
     """Generator. Encoder-Decoder Architecture."""
-    def __init__(self, conv_dim=64, c_dim=5, repeat_num=6, k_size=4, n_down=2, device=None):
+    def __init__(self, conv_dim=64, c_dim=5, repeat_num=6, k_size=4, n_down=2, device=None, n_uv=24):
+        '''
+        :param conv_dim:
+        :param c_dim:
+        :param repeat_num:
+        :param k_size:
+        :param n_down:
+        :param device:
+        :param n_uv: number of UV-maps
+        '''
         super(ResUnetGeneratorUV, self).__init__()
         self._name = 'resunet_generator_uv'
         self.device = device if device is not None else torch.device('cuda')
@@ -80,17 +89,15 @@ class ResUnetGeneratorUV(NetworkBase):
         self.skippers = nn.Sequential(*skippers).to(self.device)
 
         # UV-mapping:
-        self.n_uv = 24    # number of uv-maps
-
         layers = []
-        layers.append(nn.Conv2d(curr_dim, self.n_uv*3, kernel_size=7, stride=1, padding=3, bias=False))
+        layers.append(nn.Conv2d(curr_dim, n_uv*2, kernel_size=7, stride=1, padding=3, bias=False))
         layers.append(nn.Tanh())
         self.uv_reg = nn.Sequential(*layers).to(self.device)
 
         layers = []
-        layers.append(nn.Conv2d(curr_dim, self.n_uv*1, kernel_size=7, stride=1, padding=3, bias=False))
+        layers.append(nn.Conv2d(curr_dim, 1, kernel_size=7, stride=1, padding=3, bias=False))
         layers.append(nn.Sigmoid())
-        self.attetion_reg = nn.Sequential(*layers).to(self.device)
+        self.parts_reg = nn.Sequential(*layers).to(self.device)
 
     def inference(self, x):
         # encoder, 0, 1, 2, 3 -> [256, 128, 64, 32]
@@ -140,7 +147,7 @@ class ResUnetGeneratorUV(NetworkBase):
         return d_out
 
     def regress(self, x):
-        return self.uv_reg(x), self.attetion_reg(x)
+        return self.uv_reg(x), self.parts_reg(x)
 
 
 class HoloportGeneratorUV(NetworkBase):
@@ -153,21 +160,34 @@ class HoloportGeneratorUV(NetworkBase):
         self.repeat_num = repeat_num
 
         # source generator
-        self.src_model = ResUnetGenerator(conv_dim=conv_dim, c_dim=src_dim, repeat_num=repeat_num, k_size=3, n_down=self.n_down, device=device)
+        self.src_model = ResUnetGeneratorUV(conv_dim=conv_dim, c_dim=src_dim, repeat_num=repeat_num, k_size=3, n_down=self.n_down, device=device)
 
         # transfer generator
-        self.tsf_model = ResUnetGenerator(conv_dim=conv_dim, c_dim=tsf_dim, repeat_num=repeat_num, k_size=3, n_down=self.n_down, device=device)
+        self.tsf_model = ResUnetGeneratorUV(conv_dim=conv_dim, c_dim=tsf_dim, repeat_num=repeat_num, k_size=3, n_down=self.n_down, device=device)
 
-    def forward(self, src_inputs, tsf_inputs, T, textures):
+        # texture dict:
+        self.texture_dict = {}
 
-        src_img, src_mask, tsf_img, tsf_mask = self.infer_front(src_inputs, tsf_inputs, T, textures)
+    def set_textures_dict(self, texture_dict):
+        self.texture_dict = {}
+        for k,v in texture_dict.items():
+            self.texture_dict[k] = torch.nn.Parameter(v, requires_grad=True)
+            torch.nn.Module.register_parameter(self, name=k, param=self.texture_dict[k])
 
-        return src_img, src_mask, tsf_img, tsf_mask
+    def forward(self, src_inputs, tsf_inputs, T, person_ids):
+        # prepare texture for each person from batch:
+        texture_list = []
+        for p_id in person_ids:
+            texture_list.append(self.texture_dict[p_id])
+
+        src_img, src_mask, tsf_img, tsf_mask, debug_data = self.infer_front(src_inputs, tsf_inputs, T, texture_list)
+
+        return src_img, src_mask, tsf_img, tsf_mask, debug_data
 
     def encode_src(self, src_inputs):
         return self.src_model.inference(src_inputs)
 
-    def infer_front(self, src_inputs, tsf_inputs, T, textures):
+    def infer_front(self, src_inputs, tsf_inputs, T, texture_list):
         # encoder
         src_x = self.src_model.encoders[0](src_inputs)
         tsf_x = self.tsf_model.encoders[0](tsf_inputs)
@@ -191,17 +211,40 @@ class HoloportGeneratorUV(NetworkBase):
 
         # decoders
         src_uv, src_mask = self.src_model.regress(self.src_model.decode(src_x, src_encoder_outs))
-        tsf_uv, tsf_mask = self.tsf_model.regress(self.tsf_model.decode(tsf_x, tsf_encoder_outs))
+        tsf_uv, tsf_mask= self.tsf_model.regress(self.tsf_model.decode(tsf_x, tsf_encoder_outs))
 
         # uv-sampling:
-        src_patches = F.grid_sample(src_uv, textures)  # textures shape: [bn,24,3,256,256]
-        tsf_patches = F.grid_sample(tsf_uv, textures)
+        bs,_,h,w = src_uv.shape
+        src_uv = src_uv.view((bs,-1, h, w, 2))
+        tsf_uv = tsf_uv.view((bs,-1, h, w, 2))
+        src_patches = []
+        tsf_patches = []
+        src_grid = []
+        for i, texture in enumerate(texture_list):     # textures shape: [24,3,256,256]
+            src_grid.append(F.grid_sample(texture, src_uv[i]).unsqueeze(0))
+
+            src_patches.append(F.grid_sample(texture, src_uv[i]).sum(0).unsqueeze(0))
+            tsf_patches.append(F.grid_sample(texture, tsf_uv[i]).sum(0).unsqueeze(0))
+        src_patches = torch.cat(src_patches, dim=0)
+        tsf_patches = torch.cat(tsf_patches, dim=0)
 
         # merge patches into output image:
-        src_img = torch.sum(src_patches * src_mask, dim=1)
-        tsf_img = torch.sum(tsf_patches * tsf_mask, dim=1)
+        src_fake_img = src_patches * src_mask
+        tsf_fake_img = tsf_patches * tsf_mask
 
-        return src_img, src_mask, tsf_img, tsf_mask
+        # inverse masks (foreground mask to background one):
+        src_mask = torch.tensor(1.0) - src_mask
+        tsf_mask = torch.tensor(1.0) - tsf_mask
+
+        debug_data = {}
+        debug_data['src_uv'] = src_uv
+        debug_data['tsf_uv'] = tsf_uv
+        debug_data['src_patches'] = src_patches
+        debug_data['tsf_patches'] = tsf_patches
+        debug_data['src_grid'] = torch.cat(src_grid, dim=0)
+
+
+        return src_fake_img, src_mask, tsf_fake_img, tsf_mask, debug_data
 
     def swap(self, tsf_inputs, src_encoder_outs12, src_encoder_outs21, src_resnet_outs12, src_resnet_outs21, T12, T21):
         # encoder
@@ -279,6 +322,49 @@ class HoloportGeneratorUV(NetworkBase):
         T_scale = self.resize_trans(x, T)
         x_trans = self.stn(x, T_scale)
         return x_trans
+
+
+class GeneratorUV(NetworkBase):
+    """Generator. Encoder-Decoder Architecture."""
+    def __init__(self, src_dim, conv_dim=64, repeat_num=6, device=None):
+        super(GeneratorUV, self).__init__()
+        self._name = 'generator_uv'
+
+        self.n_down = 3
+        self.repeat_num = repeat_num
+
+        # source generator
+        self.src_model = ResUnetGeneratorUV(conv_dim=conv_dim, c_dim=src_dim,
+                                            repeat_num=repeat_num, k_size=3,
+                                            n_down=self.n_down, device=device)
+
+    def encode_src(self, src_inputs):
+        return self.src_model.inference(src_inputs)
+
+    def forward(self, src_inputs):
+        # encoder
+        src_x = self.src_model.encoders[0](src_inputs)
+
+        src_encoder_outs = [src_x]
+        for i in range(1, self.n_down + 1):
+            src_x = self.src_model.encoders[i](src_x)
+            src_encoder_outs.append(src_x)
+
+        # resnets
+        for i in range(self.repeat_num):
+            src_x = self.src_model.resnets[i](src_x)
+
+        # decoders
+        pred_uvs, pred_masks = self.src_model.regress(self.src_model.decode(src_x, src_encoder_outs))
+        bs,_,h,w = pred_uvs.shape
+        pred_uvs = pred_uvs.view((bs,-1, h, w, 2))
+
+        # inverse masks (foreground mask to background one):
+        pred_masks = torch.tensor(1.0) - pred_masks
+
+        debug_data = {}
+
+        return pred_uvs, pred_masks, debug_data
 
 
 if __name__ == '__main__':
