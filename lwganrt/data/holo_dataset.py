@@ -1,9 +1,9 @@
 import os.path
 import torchvision.transforms as transforms
-from data.dataset import DatasetBase
+from lwganrt.data.dataset import DatasetBase
 import numpy as np
-from utils import cv_utils
-from utils.util import ToTensor, ImageTransformer
+from lwganrt.utils import cv_utils
+from lwganrt.utils.util import ToTensor, ImageTransformer
 from enum import Enum
 
 __all__ = ['HoloBaseDataset', 'HoloDataset']
@@ -18,18 +18,20 @@ class HoloBaseDataset(DatasetBase):
 		super(HoloBaseDataset, self).__init__(opt, is_for_train)
 		self._name = 'HoloBaseDataset'
 		self._intervals = opt.holo_intervals
+		self.uv_sampling = opt.uv_sampling
 
 		# read dataset
 		self._read_dataset_paths()
 
 	def __getitem__(self, index):
 		v_info = self._vids_info[index % self._num_videos]
-		images, smpls = self._load_pairs(v_info)
+		images, smpls, tex_id = self._load_pairs(v_info)
 
 		# pack data
 		sample = {
 			'images': images,
-			'smpls': smpls
+			'smpls': smpls,
+			'tex_id': tex_id
 		}
 
 		sample = self._transform(sample)
@@ -91,12 +93,16 @@ class HoloBaseDataset(DatasetBase):
 				assert len(cams_image_path[0]) == cams_smpl[0]['cams'].shape[0], \
 					'{} != {}'.format(len(cams_image_path[0]), cams_smpl[0]['cams'].shape[0])
 
+				t = line.split('/')
+				tex_id = t[0] + '/' + t[1] + '/' + t[2]   # person/ligth/garment
+
 				info = {
 					'images': cams_image_path,
 					'num_frames': len(cams_image_path[0]),
 					'num_cams': len(cams_image_path),
 					'smpl': cams_smpl,
-					'mode': mode
+					'mode': mode,
+					'tex_id': tex_id
 				}
 
 				vids_info.append(info)
@@ -138,6 +144,7 @@ class HoloDataset(HoloBaseDataset):
 	def _load_pairs(self, vid_info):
 		num_frames = vid_info['num_frames']
 		num_cams = vid_info['num_cams']
+		tex_id = vid_info['tex_id']
 
 		# Select frame and camera ids:
 		cam_ids, frame_ids = [], []
@@ -179,4 +186,4 @@ class HoloDataset(HoloBaseDataset):
 			image = cv_utils.read_cv2_img(image_path)
 			images.append(image)
 
-		return images, smpls
+		return images, smpls, tex_id

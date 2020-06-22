@@ -7,6 +7,9 @@ from .models import BaseModel
 from lwganrt.networks.networks import NetworksFactory, HumanModelRecovery, Vgg19, VGGLoss, FaceLoss, StyleLoss
 from lwganrt.utils.nmr import SMPLRenderer
 import ipdb
+import numpy as np
+import cv2
+from lwganrt.data.holo_texture_loader import load_textures
 
 
 class BodyRecoveryFlowH(torch.nn.Module):
@@ -175,6 +178,11 @@ class HoloportatorUV(BaseModel):
         # create networks
         self._init_create_networks()
 
+        # load Holo textures:
+        holo_tex_path = os.path.join(opt.holo_data_dir, opt.holo_tex_path)
+        textures_dict = load_textures(holo_tex_path, device=self.device)
+        self._G.set_textures_dict(textures_dict)
+
         # init train variables and losses
         if self._is_train:
             self._init_train_vars()
@@ -184,9 +192,9 @@ class HoloportatorUV(BaseModel):
         if not self._is_train or self._opt.load_epoch > 0:
             self.load()
         elif self._opt.load_path != 'None':
-            self._load_params(self._G, self._opt.load_path, need_module=len(self._gpu_ids) > 1)
+            self._load_params(self._G, self._opt.load_path, need_module=True)
             if self._opt.load_D_path != 'None':
-                self._load_params(self._D, self._opt.load_D_path, need_module=len(self._gpu_ids) > 1)
+                self._load_params(self._D, self._opt.load_D_path, need_module=True)
 
         # prefetch variables
         self._init_prefetch_inputs()
@@ -229,6 +237,10 @@ class HoloportatorUV(BaseModel):
         self._current_lr_G = self._opt.lr_G
         self._current_lr_D = self._opt.lr_D
 
+        # print ('PARAMS')
+        # for k, v in self._G.named_parameters():
+        #     print (k)
+
         # initialize optimizers
         self._optimizer_G = torch.optim.Adam(self._G.parameters(), lr=self._current_lr_G,
                                              betas=(self._opt.G_adam_b1, self._opt.G_adam_b2))
@@ -245,6 +257,7 @@ class HoloportatorUV(BaseModel):
         self._T = None
         self._body_bbox = None
         self._head_bbox = None
+        self.person_ids = []
 
     def _init_losses(self):
         # define loss functions
@@ -318,6 +331,9 @@ class HoloportatorUV(BaseModel):
             self._head_bbox = head_bbox
             self._body_bbox = body_bbox
 
+            # for textures preparing
+            self.person_ids = input['tex_id']
+
     def set_train(self):
         self._G.train()
         self._D.train()
@@ -327,16 +343,16 @@ class HoloportatorUV(BaseModel):
         self._G.eval()
         self._is_train = False
 
-    def forward(self):
+    def forward(self, keep_data_for_visuals=None):
         # generate fake images
-        fake_src_imgs, fake_src_mask, fake_tsf_imgs, fake_tsf_mask = \
-            self._G.forward(self._input_G_src, self._input_G_tsf, T=self._T)
+        fake_src_imgs, fake_src_mask, fake_tsf_imgs, fake_tsf_mask, debug_data = \
+            self._G.forward(self._input_G_src, self._input_G_tsf, self._T, self.person_ids)
 
-        fake_masks = torch.cat([1 - fake_src_mask, 1 - fake_tsf_mask], dim=0)
+        fake_masks = torch.cat([fake_src_mask, fake_tsf_mask], dim=1)
 
-        return fake_src_imgs, fake_tsf_imgs, fake_masks
+        return fake_src_imgs, fake_tsf_imgs, fake_masks, debug_data
 
-    def optimize_parameters(self, trainable=True):
+    def optimize_parameters(self, keep_data_for_visuals=None, trainable=True):
         if self._is_train:
             # run inference
             fake_src_imgs, fake_tsf_imgs, fake_masks = self.forward()
@@ -425,6 +441,7 @@ class HoloportatorUV(BaseModel):
     def get_current_visuals(self):
         # visuals return dictionary
         visuals = OrderedDict()
+        return visuals
 
         # inputs
         visuals['1_real_img'] = self._vis_input
@@ -493,4 +510,29 @@ class HoloportatorUV(BaseModel):
         for param_group in self._optimizer_D.param_groups:
             param_group['lr'] = self._current_lr_D
         print('update D learning rate: %f -> %f' % (self._current_lr_D + lr_decay_D, self._current_lr_D))
+
+    @torch.no_grad()
+    def save_textures(self, i_epoch, i_iter, dst_dir='/home/darkalert/builds/ImpersonatorRT/lwganrt/outputs/textures'):
+        dst_dir = os.path.join(dst_dir, str(i_epoch) + '_' + str(i_iter))
+
+        for k, v in self._G.texture_dict.items():
+            tex_dir = os.path.join(dst_dir, k)
+            if not os.path.exists(tex_dir):
+                os.makedirs(tex_dir)
+
+            textures = v.detach().cpu().numpy()
+            textures = np.transpose(textures, (0,2,3,1))
+            textures = (textures + 1) / 2.0 * 255
+            textures = textures.astype(np.uint8)
+            bs = textures.shape[0]
+
+            for i in range(bs):
+                dst_path = os.path.join(tex_dir, 'tex_' + str(i+1).zfill(5) + '.png')
+                img = cv2.cvtColor(textures[i], cv2.COLOR_RGB2BGR)
+                cv2.imwrite(dst_path, img)
+
+
+
+
+
 

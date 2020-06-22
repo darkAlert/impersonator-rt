@@ -23,7 +23,8 @@ class Train(object):
         self._model = ModelsFactory.get_by_name(self._opt.model, self._opt)
         self._tb_visualizer = TBVisualizer(self._opt)
 
-        self._train()
+        # self._train()
+        self._save_internals()
 
     def _train(self):
         self._total_steps = self._opt.load_epoch * self._dataset_train_size
@@ -88,6 +89,10 @@ class Train(object):
                 self._model.save(i_epoch)
                 self._last_save_latest_time = time.time()
 
+            if i_train_batch % 50 == 0:
+                self._model.save_textures(i_epoch, i_train_batch)
+
+
     def _display_terminal(self, iter_start_time, i_epoch, i_train_batch, visuals_flag):
         errors = self._model.get_current_errors()
         t = (time.time() - iter_start_time) / self._opt.batch_size
@@ -134,6 +139,122 @@ class Train(object):
 
         # set model back to train
         self._model.set_train()
+
+    def _save_internals(self):
+        import os
+        import numpy as np
+        import cv2
+        root_dir = '/home/darkalert/builds/ImpersonatorRT/lwganrt/outputs/test'
+        if not os.path.exists(root_dir):
+            os.makedirs(root_dir)
+
+        for i_train_batch, train_batch in enumerate(self._dataset_train):
+            self._model.set_input(train_batch)
+            fake_src_imgs, fake_tsf_imgs, fake_masks, debug_data = self._model.forward()
+
+            fake_src_imgs = fake_src_imgs.permute(0, 2, 3, 1).detach().cpu().numpy()
+            fake_src_imgs = (fake_src_imgs+1.0) / 2.0 *255.0
+            fake_src_imgs = fake_src_imgs.astype(np.uint8)#[...,::-1]
+
+            fake_tsf_imgs = fake_tsf_imgs.permute(0, 2, 3, 1).detach().cpu().numpy()
+            fake_tsf_imgs = (fake_tsf_imgs+1.0) / 2.0 *255.0
+            fake_tsf_imgs = fake_tsf_imgs.astype(np.uint8)#[...,::-1]
+
+            fake_masks = fake_masks.permute(0, 2, 3, 1).detach().cpu().numpy()
+            v_max = np.max(fake_masks)
+            v_min = np.min(fake_masks)
+            print (v_max, v_min)
+            fake_masks = fake_masks*255.0
+            fake_masks = fake_masks.astype(np.uint8)#[...,::-1]
+
+            src_patches = debug_data['src_patches'].permute(0, 2, 3, 1).detach().cpu().numpy()
+            v_max = np.max(src_patches)
+            v_min = np.min(src_patches)
+            print('src_patches',v_max, v_min)
+            src_patches = (src_patches+1.0) / 2.0 *255.0
+            src_patches = src_patches.astype(np.uint8)#[...,::-1]
+
+            tsf_patches = debug_data['tsf_patches'].permute(0, 2, 3, 1).detach().cpu().numpy()
+            v_max = np.max(tsf_patches)
+            v_min = np.min(tsf_patches)
+            print('tsf_patches',v_max, v_min)
+            tsf_patches = (tsf_patches+1.0) / 2.0 *255.0
+            tsf_patches = tsf_patches.astype(np.uint8)#[...,::-1]
+
+            src_uv = debug_data['src_uv'].detach().cpu().numpy()
+            v_max = np.max(src_uv)
+            v_min = np.min(src_uv)
+            print('src_uv',v_max, v_min)
+            src_uv = (src_uv+1.0) / 2.0 *255.0
+            src_uv = src_uv.astype(np.uint8)#[...,::-1]
+
+            tsf_uv = debug_data['tsf_uv'].detach().cpu().numpy()
+            v_max = np.max(tsf_uv)
+            v_min = np.min(tsf_uv)
+            print('tsf_uv',v_max, v_min)
+            tsf_uv = (tsf_uv+1.0) / 2.0 *255.0
+            tsf_uv = tsf_uv.astype(np.uint8)#[...,::-1]
+
+            src_grid = debug_data['src_grid'].permute(0, 1, 3, 4, 2).detach().cpu().numpy()
+            v_max = np.max(src_grid)
+            v_min = np.min(src_grid)
+            print('src_grid', v_max, v_min)
+            src_grid = (src_grid + 1.0) / 2.0 * 255.0
+            src_grid = src_grid.astype(np.uint8)
+
+
+            bs = fake_src_imgs.shape[0]
+            for i in range(bs):
+                for j in range(24):
+                    dst_path = os.path.join(root_dir, 'src_grid_' + str(i_train_batch) + '_' + str(i) + '_part' + str(j)  + '.png')
+                    img = cv2.cvtColor(src_grid[i,j], cv2.COLOR_RGB2BGR)
+                    cv2.imwrite(dst_path, img)
+
+
+                # dst_path = os.path.join(root_dir, 'fake_src_' + str(i_train_batch) + '_' + str(i) + '.png')
+                # img = cv2.cvtColor(fake_src_imgs[i], cv2.COLOR_RGB2BGR)
+                # cv2.imwrite(dst_path, img)
+                #
+                # dst_path = os.path.join(root_dir, 'fake_tsg_' + str(i_train_batch) + '_' + str(i) + '.png')
+                # img = cv2.cvtColor(fake_tsf_imgs[i], cv2.COLOR_RGB2BGR)
+                # cv2.imwrite(dst_path, img)
+                #
+                # dst_path = os.path.join(root_dir, 'facke_mask_src_' + str(i_train_batch) + '_' + str(i) + '.png')
+                # img = fake_masks[i,:,:,0]
+                # cv2.imwrite(dst_path, img)
+                #
+                # dst_path = os.path.join(root_dir, 'facke_mask_tsf_' + str(i_train_batch) + '_' + str(i) + '.png')
+                # img = fake_masks[i,:,:,1]
+                # cv2.imwrite(dst_path, img)
+                #
+                # dst_path = os.path.join(root_dir, 'src_patches_' + str(i_train_batch) + '_' + str(i) + '.png')
+                # img = cv2.cvtColor(src_patches[i], cv2.COLOR_RGB2BGR)
+                # cv2.imwrite(dst_path, img)
+                #
+                # dst_path = os.path.join(root_dir, 'tsf_patches_' + str(i_train_batch) + '_' + str(i) + '.png')
+                # img = cv2.cvtColor(tsf_patches[i], cv2.COLOR_RGB2BGR)
+                # cv2.imwrite(dst_path, img)
+                #
+                for j in range(24):
+                    dst_path = os.path.join(root_dir, 'src_uv_U_' + str(i_train_batch) + '_' + str(i) + '_part' + str(j)  + '.png')
+                    img = src_uv[i,j,:,:,0]
+                    cv2.imwrite(dst_path, img)
+
+                    dst_path = os.path.join(root_dir,'src_uv_V_' + str(i_train_batch) + '_' + str(i) + '_part' + str(j) + '.png')
+                    img = src_uv[i, j, :, :, 1]
+                    cv2.imwrite(dst_path, img)
+                #
+                #     dst_path = os.path.join(root_dir,'tsf_uv_U_' + str(i_train_batch) + '_' + str(i) + '_part' + str(j) + '.png')
+                #     img = tsf_uv[i, j, :, :, 0]
+                #     cv2.imwrite(dst_path, img)
+                #
+                #     dst_path = os.path.join(root_dir,
+                #                             'tsf_uv_V_' + str(i_train_batch) + '_' + str(i) + '_part' + str(j) + '.png')
+                #     img = tsf_uv[i, j, :, :, 1]
+                #     cv2.imwrite(dst_path, img)
+
+
+            break
 
 
 if __name__ == "__main__":

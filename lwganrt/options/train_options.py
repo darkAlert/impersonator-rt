@@ -14,6 +14,7 @@ class TrainOptions(BaseOptions):
         self._parser.add_argument('--holo_images_folder', type=str, default='images_HD', help='Holo images folder')
         self._parser.add_argument('--holo_smpls_folder', type=str, default='smpls', help='Holo smpls folder')
         self._parser.add_argument('--holo_intervals', type=int, default=10, help='the interval between frames of the holo dataset')
+        self._parser.add_argument('--holo_tex_path', type=str, default='/', help='Path to file containing Holo textures path for UV-sampling')
 
         # use place dataset if need
         self._parser.add_argument('--place_dir', type=str, default='/p300/places365_standard', help='place folder')
@@ -35,6 +36,8 @@ class TrainOptions(BaseOptions):
         self._parser.add_argument('--use_style', action='store_true', help='whether to use style loss or not')
         self._parser.add_argument('--use_face', action='store_true', help='whether to use face loss or not')
         self._parser.add_argument('--mask_bce', action='store_true', help='whether to use CrossEntropyLoss or L1 loss in mask or not.')
+        self._parser.add_argument('--uv_sampling', action='store_true', help='Use UV-sampling or not')
+
         self._parser.add_argument('--nepochs_no_decay', type=int, default=10, help='# of epochs at starting learning rate')
         self._parser.add_argument('--nepochs_decay', type=int, default=20, help='# of epochs to linearly decay learning rate to zero')
 

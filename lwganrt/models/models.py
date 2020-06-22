@@ -57,6 +57,10 @@ class ModelsFactory(object):
             from .holoport_trainer import Holoportator
             model = Holoportator(*args, **kwargs)
 
+        elif model_name == 'holoportator_uv_trainer':
+            from .holoport_uv_trainer import HoloportatorUV
+            model = HoloportatorUV(*args, **kwargs)
+
         else:
             raise ValueError("Model %s not recognized." % model_name)
 
@@ -181,7 +185,11 @@ class BaseModel(object):
 
         save_data = torch.load(load_path)
         if need_module:
-            network.load_state_dict(save_data)
+            # network.load_state_dict(save_data)
+            model_dict = network.state_dict()
+            pretrained_dict = {k: v for k, v in save_data.items() if k in model_dict}
+            model_dict.update(pretrained_dict)
+            network.load_state_dict(model_dict)
         else:
             load(network, save_data, remove_bg_model)
 
