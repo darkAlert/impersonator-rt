@@ -47,6 +47,10 @@ class DatasetFactory(object):
             from lwganrt.data.ada_dataset import AdaDataset
             dataset = AdaDataset(opt, is_for_train)
 
+        elif dataset_name == 'DensePose':
+            from lwganrt.data.densepose_dataset import DensePoseDataset
+            dataset = DensePoseDataset(opt, is_for_train)
+
         else:
             raise ValueError("Dataset [%s] not recognized." % dataset_name)
 

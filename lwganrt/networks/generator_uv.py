@@ -91,12 +91,13 @@ class ResUnetGeneratorUV(NetworkBase):
         # UV-mapping:
         layers = []
         layers.append(nn.Conv2d(curr_dim, n_uv*2, kernel_size=7, stride=1, padding=3, bias=False))
-        layers.append(nn.Tanh())
+        # layers.append(nn.Tanh())
+        layers.append(nn.Sigmoid())
         self.uv_reg = nn.Sequential(*layers).to(self.device)
 
         layers = []
-        layers.append(nn.Conv2d(curr_dim, 1, kernel_size=7, stride=1, padding=3, bias=False))
-        layers.append(nn.Sigmoid())
+        layers.append(nn.Conv2d(curr_dim, n_uv+1, kernel_size=7, stride=1, padding=3, bias=False))
+        # layers.append(nn.Sigmoid())
         self.parts_reg = nn.Sequential(*layers).to(self.device)
 
     def inference(self, x):
@@ -212,29 +213,30 @@ class HoloportGeneratorUV(NetworkBase):
         # decoders
         src_uv, src_mask = self.src_model.regress(self.src_model.decode(src_x, src_encoder_outs))
         tsf_uv, tsf_mask= self.tsf_model.regress(self.tsf_model.decode(tsf_x, tsf_encoder_outs))
+        bs, _, h, w = src_uv.shape
+        src_uv = src_uv.view((bs, -1, 2, h, w))
+        tsf_uv = tsf_uv.view((bs, -1, 2, h, w))
+        src_uv = src_uv.permute(0, 1, 3, 4, 2)
+        tsf_uv = tsf_uv.permute(0, 1, 3, 4, 2)
 
         # uv-sampling:
-        bs,_,h,w = src_uv.shape
-        src_uv = src_uv.view((bs,-1, h, w, 2))
-        tsf_uv = tsf_uv.view((bs,-1, h, w, 2))
         src_patches = []
         tsf_patches = []
         src_grid = []
         for i, texture in enumerate(texture_list):     # textures shape: [24,3,256,256]
             src_grid.append(F.grid_sample(texture, src_uv[i]).unsqueeze(0))
-
             src_patches.append(F.grid_sample(texture, src_uv[i]).sum(0).unsqueeze(0))
             tsf_patches.append(F.grid_sample(texture, tsf_uv[i]).sum(0).unsqueeze(0))
         src_patches = torch.cat(src_patches, dim=0)
         tsf_patches = torch.cat(tsf_patches, dim=0)
 
         # merge patches into output image:
-        src_fake_img = src_patches * src_mask
-        tsf_fake_img = tsf_patches * tsf_mask
+        src_fake_img = src_patches# * src_mask
+        tsf_fake_img = tsf_patches# * tsf_mask
 
         # inverse masks (foreground mask to background one):
-        src_mask = torch.tensor(1.0) - src_mask
-        tsf_mask = torch.tensor(1.0) - tsf_mask
+        # src_mask = torch.tensor(1.0) - src_mask
+        # tsf_mask = torch.tensor(1.0) - tsf_mask
 
         debug_data = {}
         debug_data['src_uv'] = src_uv
@@ -357,7 +359,7 @@ class GeneratorUV(NetworkBase):
         # decoders
         pred_uvs, pred_masks = self.src_model.regress(self.src_model.decode(src_x, src_encoder_outs))
         bs,_,h,w = pred_uvs.shape
-        pred_uvs = pred_uvs.view((bs,-1, h, w, 2))
+        pred_uvs = pred_uvs.view((bs,-1, 2, h, w))
 
         # inverse masks (foreground mask to background one):
         pred_masks = torch.tensor(1.0) - pred_masks

@@ -3,6 +3,7 @@ from .models import BaseModel
 from lwganrt.networks.networks import NetworksFactory, HumanModelRecovery, Vgg19, VGGLoss, FaceLoss, StyleLoss
 from lwganrt.utils.nmr import SMPLRenderer
 import lwganrt.utils.util as util
+from collections import OrderedDict
 
 
 class BodyRecoveryFlowDP(torch.nn.Module):
@@ -100,7 +101,7 @@ class DensePose(BaseModel):
 
     def _create_generator(self):
         return NetworksFactory.get_by_name(self._opt.gen_name, src_dim=3+self._G_cond_nc,
-                                           tsf_dim=3+self._G_cond_nc, repeat_num=self._opt.repeat_num,
+                                           repeat_num=self._opt.repeat_num,
                                            device=self.device)
 
     def _init_train_vars(self):
@@ -129,12 +130,13 @@ class DensePose(BaseModel):
 
         with torch.no_grad():
             images = input['images']
-            smpls = input['smpls']
+            smpls = input['smpl']
             uvs = input['uvs']
-            src_img = images[:, 0, ...].cuda()
-            src_smpl = smpls[:, 0, ...].cuda()
-            src_uv = None
-            src_mask = None
+            masks = input['mask']
+            src_img = images.cuda()
+            src_smpl = smpls.cuda()
+            src_uv = uvs.cuda()
+            src_mask = masks.cuda()
 
             input_G_src, src_crop_mask = self._bdr(src_img, src_smpl)
 
@@ -150,6 +152,16 @@ class DensePose(BaseModel):
     def set_eval(self):
         self._G.eval()
         self._is_train = False
+
+    def inference(self):
+        # generate fake images
+        pred_uvs, pred_masks, _ = self.forward()
+        sm = torch.nn.Softmax()
+        pred_mask_probs = sm(pred_masks)
+        pred_masks = torch.argmax(pred_mask_probs, dim=1)
+        pred_uvs = pred_uvs.permute(0, 1, 3, 4, 2)
+
+        return pred_uvs, pred_masks
 
     def forward(self, keep_data_for_visuals=None):
         # generate fake images
@@ -169,11 +181,20 @@ class DensePose(BaseModel):
             self._optimizer_G.step()
 
     def _optimize_G(self, pred_uvs, pred_masks):
+        #
+        # print('pred_uvs', pred_uvs.shape, pred_uvs.dtype, self._real_uv.shape, self._real_uv.dtype)
+        # print('pred_masks', pred_masks.shape, pred_masks.dtype, self._real_mask.shape, self._real_mask.dtype)
         self._loss_g_smooth_l1 = self._crt_smooth_l1(pred_uvs, self._real_uv) * self._opt.lambda_rec
         self._loss_g_softmax = self._crt_softmax(pred_masks, self._real_mask) * self._opt.lambda_mask
 
         # combine losses
         return self._loss_g_smooth_l1 + self._loss_g_softmax
+
+    def get_current_errors(self):
+        loss_dict = OrderedDict([('g_smooth_l1', self._loss_g_smooth_l1.item()),
+                                 ('g_softmax', self._loss_g_softmax.item())])
+
+        return loss_dict
 
     def save(self, label, save_optimizer=True):
         # save networks

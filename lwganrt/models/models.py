@@ -61,6 +61,10 @@ class ModelsFactory(object):
             from .holoport_uv_trainer import HoloportatorUV
             model = HoloportatorUV(*args, **kwargs)
 
+        elif model_name == 'densepose_trainer':
+            from .densepose_trainer import DensePose
+            model = DensePose(*args, **kwargs)
+
         else:
             raise ValueError("Model %s not recognized." % model_name)
 

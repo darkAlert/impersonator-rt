@@ -16,6 +16,9 @@ class TrainOptions(BaseOptions):
         self._parser.add_argument('--holo_intervals', type=int, default=10, help='the interval between frames of the holo dataset')
         self._parser.add_argument('--holo_tex_path', type=str, default='/', help='Path to file containing Holo textures path for UV-sampling')
 
+        # use DensePose if need:
+        self._parser.add_argument('--holo_uvs_folder', type=str, default='uv', help='Holo UVs folder')
+
         # use place dataset if need
         self._parser.add_argument('--place_dir', type=str, default='/p300/places365_standard', help='place folder')
         self._parser.add_argument('--place_bs', type=int, default=4, help='input batch size of place dataset')

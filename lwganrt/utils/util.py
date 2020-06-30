@@ -69,6 +69,19 @@ class ToTensor(object):
 
         return sample
 
+class ToTensorDensePose(object):
+    """
+    Convert ndarrays in sample to Tensors.
+    """
+
+    def __call__(self, sample):
+        sample['images'] = torch.Tensor(sample['images']).float()
+        sample['smpl'] = torch.Tensor(sample['smpl']).float()
+        sample['uvs'] = torch.Tensor(sample['uvs']).float()
+        sample['mask'] = torch.Tensor(sample['mask']).int()
+
+        return sample
+
 
 def morph(src_bg_mask, ks, mode='erode', kernel=None):
     n_ks = ks ** 2

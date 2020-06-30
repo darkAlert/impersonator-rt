@@ -355,7 +355,7 @@ class HoloportatorUV(BaseModel):
     def optimize_parameters(self, keep_data_for_visuals=None, trainable=True):
         if self._is_train:
             # run inference
-            fake_src_imgs, fake_tsf_imgs, fake_masks = self.forward()
+            fake_src_imgs, fake_tsf_imgs, fake_masks, _ = self.forward()
 
             loss_G = self._optimize_G(fake_src_imgs, fake_tsf_imgs, fake_masks)
 
